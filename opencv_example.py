@@ -6,7 +6,7 @@ import cv2 as cv
 import numpy as np
 import time
 import math
-import typing
+from typing import Tuple
 
 WIDTH = 500
 HEIGHT = 500
