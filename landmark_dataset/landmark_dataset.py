@@ -22,19 +22,23 @@ mp_draw = mp.solutions.drawing_utils
 
 # Function to get hand landmarks from the image
 def get_landmarks(image):
-    lm_coords = []
+    lms = []
     # Processes visible hand objects in the screen
     results = hands.process(cv.cvtColor(image, cv.COLOR_BGR2RGB))
     if results.multi_hand_landmarks: 
         for handLandmarks in results.multi_hand_landmarks:
-            
             mp_draw.draw_landmarks(image, handLandmarks, mp_hands.HAND_CONNECTIONS)
             for id, lm in enumerate(handLandmarks.landmark):
+                lm_coords = []
                 lm_coords.append(lm.x)
                 lm_coords.append(lm.y)
                 lm_coords.append(lm.z)
+                if len(lm_coords) == 3:
+                    lms.append(lm_coords)
+                else:
+                    logger.warning(f"Found {len(lm_coords)} coordinates (expected 3).")
 
-    return lm_coords
+    return lms
 
 if __name__ == "__main__":
 
@@ -60,7 +64,7 @@ if __name__ == "__main__":
                 exit()
             
             lms = get_landmarks(image)
-            if len(lms) == 63:
+            if len(lms) == 21:
                 landmarks.append(lms)
                 labels.append(gesture_names[gesture])
             else:
