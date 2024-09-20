@@ -85,12 +85,12 @@ if __name__ == "__main__":
         img = cv.flip(cv.resize(initialImg, (width, height)),1)
     
         hand_lms = get_landmarks(img)
-        # for i, hand in enumerate(hand_lms):
-        #     prediction = model.predict(np.array([hand]))
-        #     gesture_id = np.argmax(prediction)
-        #     gesture = ['flute', 'generic', 'snareDrum', 'trumpet', 'violin'][gesture_id]
-        #     confidence = np.max(prediction)
-        #     cv.putText(img, f'Hand {i+1}: {gesture} ({confidence*100:.2f}%)', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=3)
+        for i, hand in enumerate(hand_lms):
+            prediction = model.predict(np.array([hand]))
+            gesture_id = np.argmax(prediction)
+            gesture = ['flute', 'generic', 'snareDrum', 'trumpet', 'violin'][gesture_id]
+            confidence = np.max(prediction)
+            cv.putText(img, f'Hand {i+1}: {gesture} ({confidence*100:.2f}%)', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=3)
 
         # Display FPS
         img, presentTime = displayFPS(img, presentTime)
