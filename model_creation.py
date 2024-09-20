@@ -5,8 +5,6 @@ from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout
 
-
-
 # Load the data obtained in landmark_dataset/
 landmarks = np.load('landmark_dataset/landmarks.npy')
 labels = np.load('landmark_dataset/labels.npy')
@@ -21,9 +19,9 @@ labels = to_categorical(labels, num_classes=num_classes)
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(landmarks, labels, test_size=0.2, random_state=1111)
 
+
 # Define the model
 # IDK WHAT THESE PARAMETERS DO YET WILL LOOK INTO IT FURTHER
-
 model = Sequential([
     Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(landmarks.shape[1], landmarks.shape[2])),
     MaxPooling1D(pool_size=2),

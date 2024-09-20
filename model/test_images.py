@@ -9,7 +9,7 @@ from keras.models import load_model
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
-file_handler = logging.FileHandler('gr_output.log')
+file_handler = logging.FileHandler('test_images_output.log')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
@@ -38,6 +38,15 @@ def displayFPS(image: cv.UMat, presentTime: float) -> Tuple[cv.UMat, float]:
 
     return image, presentTime
 
+def predict_gesture(img: cv.UMat) -> cv.UMat:
+    hand_lms = get_landmarks(img)
+    for i, hand in enumerate(hand_lms):
+        prediction = model.predict(np.array([hand]))
+        gesture_id = np.argmax(prediction)
+        gesture = ['flute', 'generic', 'snareDrum', 'trumpet', 'violin'][gesture_id]
+        confidence = np.max(prediction)
+        cv.putText(img, f'Hand {i+1}: {gesture} ({confidence*100:.2f}%)', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=3)
+    return img
 # Function to get hand landmarks from the image
 # Slightly different from model_creation.py and landmark_dataset.py
 def get_landmarks(image) -> list:
@@ -69,36 +78,15 @@ if __name__ == "__main__":
     model = load_model('hand_gesture_instrument_model.keras')
 
     # Initialize capture   
-    capture = cv.VideoCapture(0)
-    if not capture.isOpened():
-        raise RuntimeError("Failed to open camera.")
-    
-    # Initialize dimensions
-    width, height = setCameraDimensions(capture)
+    image_path = 'resources/flute/188.jpg'
+    image = cv.imread(image_path)
+    flipped = cv.flip(image, 1)
+    image = predict_gesture(image)
+    flipped = predict_gesture(flipped)
 
-    # Initialization for displaying FPS
-    presentTime = 0
+    cv.imshow(f'Image', image)
+    cv.imshow(f'Flipped Image', flipped)
 
-    while True:
-        # Reads the current frame
-        isTrue, initialImg = capture.read() 
-        img = cv.flip(cv.resize(initialImg, (width, height)),1)
-    
-        hand_lms = get_landmarks(img)
-        # for i, hand in enumerate(hand_lms):
-        #     prediction = model.predict(np.array([hand]))
-        #     gesture_id = np.argmax(prediction)
-        #     gesture = ['flute', 'generic', 'snareDrum', 'trumpet', 'violin'][gesture_id]
-        #     confidence = np.max(prediction)
-        #     cv.putText(img, f'Hand {i+1}: {gesture} ({confidence*100:.2f}%)', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=3)
-
-        # Display FPS
-        img, presentTime = displayFPS(img, presentTime)
-        cv.imshow('Video', img)
-
-        # Press d to exit
-        if cv.waitKey(1) &  0xFF==ord('d'):
-            break
-
-    capture.release()
+    # Press d to exit
+    cv.waitKey(0)
     cv.destroyAllWindows()
