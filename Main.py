@@ -13,7 +13,7 @@ model = load_model('hand_gesture_instrument_model.keras')
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
-file_handler = logging.FileHandler('gr_output.log')
+file_handler = logging.FileHandler('main.log')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # Initialization for displaying FPS
     presentTime = 0
     currentFrame = 0
-    predictionFrequency = 3
+    predictionFrequency = 5
 
     last_predictions = []
     while True:
