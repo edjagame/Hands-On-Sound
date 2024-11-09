@@ -33,14 +33,14 @@ def setCameraDimensions(capture: cv.VideoCapture) -> Tuple[int, int]:
 
     return (width, height)
 
-def displayFPS(image: cv.UMat, presentTime: float) -> Tuple[cv.UMat, float]:
+def displayFPS(image: cv.UMat, present_time: float) -> Tuple[cv.UMat, float]:
     currentTime = time.time()
-    fps = 1/(currentTime-presentTime)
-    presentTime = currentTime
+    fps = 1/(currentTime-present_time)
+    present_time = currentTime
 
     image = cv.putText(image, f"FPS: {str(int(fps))}", (10,70), cv.FONT_HERSHEY_PLAIN, 1, color=(255,255,255), thickness=2)
 
-    return image, presentTime
+    return image, present_time
 
 # Function to get hand landmarks from the image
 # Slightly different from model_creation.py and landmark_dataset.py
@@ -92,21 +92,24 @@ if __name__ == "__main__":
     width, height = setCameraDimensions(capture)
 
     # Initialization for displaying FPS
-    presentTime = 0
-    currentFrame = 0
-    predictionFrequency = 5
+    present_time = 0
+    current_frame = 0
+    prediction_frequency = 5
+    previous_predictions = [None, None]
+    current_predictions = [None, None]
 
-    last_predictions = []
     while True:
+
         # Reads the current frame
-        isTrue, initialImg = capture.read() 
-        img = cv.flip(cv.resize(initialImg, (width, height)),1)
+        isTrue, initial_img = capture.read() 
+        img = cv.flip(cv.resize(initial_img, (width, height)),1)
         black_img = np.zeros((height, width, 3), np.uint8)
         # hand_lms returns a list of landmarks for each hand in the image
-        if currentFrame % predictionFrequency == 0:
+        if current_frame % prediction_frequency == 0:
             hand_data = get_landmarks(img)
-            
-            last_predictions.clear()
+            previous_predictions = [None, None]
+            previous_predictions = current_predictions.copy()
+            current_predictions = [None, None]
             if hand_data:
                 for i, hand in enumerate(hand_data):
                     lms = hand[0]
@@ -115,22 +118,45 @@ if __name__ == "__main__":
                     # center_x, center_y = get_hand_center(lms)
                     center_x = int(lms[9][0] * CAMERA_WIDTH) if handedness == 'Right' else int((1-lms[9][0]) * CAMERA_WIDTH)
                     center_y = int(lms[9][1] * CAMERA_HEIGHT)
-                    last_predictions.append((gesture, confidence, center_x, center_y))
+                    if handedness == 'Left':
+                        current_predictions[0] = (gesture, confidence, center_x, center_y)
+                    elif handedness == 'Right':
+                        current_predictions[1] = (gesture, confidence, center_x, center_y)
 
-        if last_predictions:
-            for i, prediction in enumerate(last_predictions):
-                gesture = prediction[0]
-                confidence = prediction[1]
-                center_x = prediction[2]
-                center_y = prediction[3]
-                cv.putText(black_img, f'Hand {i+1}: {gesture} ({confidence*100:.2f}%)', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=2)   
-                cv.circle(black_img, (center_x, center_y), 5, (0,255,0), cv.FILLED)     
+        print(current_predictions)
 
+        if current_predictions:
+            for i, prediction in enumerate(current_predictions):
+                if prediction:
+                    gesture = prediction[0]
+                    confidence = prediction[1]
+                    cv.putText(black_img, f'Hand {i+1}: {gesture} ({confidence*100:.2f}%)', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=2)   
+
+            if previous_predictions:
+                for prediction, previous_prediction in zip(current_predictions, previous_predictions):
+                    if prediction and previous_prediction:
+                        prev_center_x = previous_prediction[2]
+                        prev_center_y = previous_prediction[3]
+                        center_x = prediction[2]
+                        center_y = prediction[3]
+                        t = current_frame%prediction_frequency / prediction_frequency
+                        lerp_center_x = int(prev_center_x + (center_x - prev_center_x) * t)
+                        lerp_center_y = int(prev_center_y + (center_y - prev_center_y) * t)
+                        cv.circle(black_img, (lerp_center_x, lerp_center_y), 10, (0,255,0), cv.FILLED)
+
+            elif current_predictions:
+                for prediction in current_predictions:
+                    if prediction:
+                        center_x = prediction[2]
+                        center_y = prediction[3]
+                        cv.circle(black_img, (center_x, center_y), 10, (0,255,0), cv.FILLED)
+                    
         # Display FPS
-        black_img, presentTime = displayFPS(black_img, presentTime)
+        black_img, present_time = displayFPS(black_img, present_time)
         cv.imshow('Hand Gesture Recognition', black_img)
         cv.imshow('Original', img)
-        currentFrame += 1
+
+        current_frame += 1
 
         # Press d to exit
         if cv.waitKey(1) &  0xFF==ord('d'):
