@@ -1,0 +1,96 @@
+import os
+import pygame
+
+class SoundPlayer:
+    def __init__(self, sounds_folder = "resources/sounds", scale = "C", mode = "Major"):
+        pygame.mixer.init()
+
+        self.sounds_folder = sounds_folder
+        self.channels = {0: pygame.mixer.Channel(0), 1: pygame.mixer.Channel(1)}
+        self.sounds = {
+            "violin": self.load_sounds("violin", scale, mode),
+            "flute": self.load_sounds("flute", scale, mode),
+            "snareDrum": self.load_sounds("snare", scale, mode),
+            "trumpet": self.load_sounds("trumpet", scale, mode),
+            "generic": self.load_sounds("generic", scale, mode),
+            "none": []
+        }
+        
+        self.current_sounds = [self.sounds["none"], self.sounds["none"]]
+        self.current_notes = [None, None]
+
+    def load_sounds(self, instrument, scale = "C", mode = "Major"):
+        notes = self.get_notes(scale, mode)
+        folder = os.path.join(self.sounds_folder, instrument)
+        sounds = []
+        for i in range(10):
+            for note in notes:
+                path = os.path.join(folder, note + str(i) + ".wav")
+                if os.path.exists(path):
+                    sounds.append(([note + str(i)], pygame.mixer.Sound(path)))
+        return sounds
+    
+    def play_sound(self, note, channel):
+        channel.play(note, loops=-1, fade_ms=200)
+
+    def stop_sound(self, channel):
+            channel.fadeout(1000)
+
+    def get_note(self, center_x, width, sounds):
+        if sounds:
+            note_index = int(center_x / (width / len(sounds)))
+            return sounds[min(note_index, len(sounds) - 1)][1]
+        return None
+
+    def set_volume(self, channel, center_y, height):
+        channel.set_volume(1 - center_y / height)
+    
+    # get_notes returns the notes of a scale in a given mode
+    def get_notes(self, scale, mode) -> list:
+        major = {
+            "C": ["C", "D", "E", "F", "G", "A", "B"],
+            "D": ["D", "E", "F#", "G", "A", "B", "C#"],
+            "E": ["E", "F#", "G#", "A", "B", "C#", "D#"],
+            "G": ["G", "A", "B", "C", "D", "E", "F#"],
+            "A": ["A", "B", "C#", "D", "E", "F#", "G#"],
+            "B": ["B", "C#", "D#", "E", "F#", "G#", "A#"],
+            "F#": ["F#", "G#", "A#", "B", "C#", "D#", "F"],
+            "C#": ["C#", "D#", "F", "F#", "G#", "A#", "C"],
+            "Ab": ["G#", "A#", "C", "C#", "D#", "F", "G"],
+            "Eb": ["D#", "F", "G", "G#", "A#", "C", "D"],
+            "Bb": ["A#", "C", "D", "D#", "F", "G", "A"],
+            "F": ["F", "G", "A", "A#", "C", "D", "E"]
+        }
+
+        minor = {
+            "C": ["C", "D", "D#", "F", "G", "G#", "A#"],
+            "D": ["D", "E", "F", "G", "A", "A#", "C"],
+            "E": ["E", "F#", "G", "A", "B", "C", "D"],
+            "G": ["G", "A", "A#", "C", "D", "D#", "F"],
+            "A": ["A", "B", "C", "D", "E", "F", "G"],
+            "B": ["B", "C#", "D", "E", "F#", "G", "A"],
+            "F#": ["F#", "G#", "A", "B", "C#", "C", "D#"],
+            "C#": ["C#", "D#", "E", "F#", "G#", "A", "B"],
+            "Ab": ["G#", "A#", "B", "C#", "D#", "E", "F#"],
+            "Eb": ["D#", "F", "F#", "G#", "A#", "B", "C#"],
+            "Bb": ["A#", "C", "C#", "D#", "F", "F#", "G#"],
+            "F": ["F", "G", "G#", "A#", "C", "C#", "D#"]
+        }
+
+        if scale not in major:
+            print("Error getting scale")
+            return []
+
+        scale_notes = major[scale]
+        if mode == "Minor":
+            scale_notes = minor[scale]
+
+        #Make C or C charp first in the list
+        if "C" in scale_notes:
+            while scale_notes[0] != "C":
+                scale_notes.append(scale_notes.pop(0))
+        elif "C#" in scale_notes:
+            while scale_notes[0] != "C#":
+                scale_notes.append(scale_notes.pop(0))
+
+        return scale_notes

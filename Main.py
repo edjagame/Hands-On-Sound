@@ -1,16 +1,16 @@
+import logging
+import os
+import threading
+import time
+
 import cv2 as cv
 import mediapipe as mp
 import numpy as np
-
-from typing import Tuple
+import pygame
 from keras.models import load_model
 
-import pygame
-
-import threading
-import time
-import logging
-import os
+from sound_player import SoundPlayer
+from typing import Tuple
 
 CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
@@ -67,31 +67,6 @@ def predict_gesture(hand_lms: list) -> Tuple[str, float]:
     confidence = np.max(prediction)
     return gesture, confidence
 
-#Function to load the sounds based on the instrument
-notes = ["A3", "B3", "C#4", "D4", "E4", "F#4", "G#4", "A4", "B4", "C#5", "D5", "E5", "F#5", "G#5", "A5"]
-sounds_folder = "resources/sounds"
-def load_sounds(instrument):
-    folder = os.path.join(sounds_folder, instrument)
-    sounds = {}
-    for note in notes:
-        path = os.path.join(folder, note + ".wav")
-        if os.path.exists(path):
-            sounds[note] = pygame.mixer.Sound(path)
-        else:
-            print(f"File not found: {path}")
-    return sounds
-
-def play_sound(note, sounds, channel):
-    if note in sounds:
-        channel.play(sounds[note], loops=-1, fade_ms=100)
-
-def stop_sound(channel):
-        channel.fadeout(500)
-
-def get_note(center_x, width):
-    note_index = int(center_x / (width / len(notes)))
-    return notes[min(note_index, len(notes) - 1)]   
-
 if __name__ == "__main__":
     #Loads the gesture prediciton model
     model = load_model('hand_gesture_instrument_model.keras')
@@ -109,31 +84,25 @@ if __name__ == "__main__":
     # Initialize dimensions
     width, height = setCameraDimensions(capture)
 
-    # Load the mixer and sounds
-    pygame.mixer.init()
-    channels = {0: pygame.mixer.Channel(0), 1: pygame.mixer.Channel(1)}
-
-    violin_sounds = load_sounds("violin")
-    flute_sounds = load_sounds("flute")
-    snare_sounds = load_sounds("snare")
-    trumpet_sounds = load_sounds("trumpet")
-    generic_sounds = load_sounds("generic")
+    # Load sound player module
+    sp = SoundPlayer(scale = "D", mode = "Minor")
 
     # Some initial variables
     # present_time is used to calculate the FPS
     # current_frame is used to keep track of the current frame
     # idle_frames is used to keep track of the number of frames the program has not detected any hand gestures
     # prediction_frequency is used to determine how often the program should predict the hand gesture
-    # previous_predictions and current_predictions are used to keep track of the previous and current predictions
+    # current_predictions are used to keep track of the current predictions
 
     present_time = 0
     current_frame = 0
     idle_frames = [0,0]
-    prediction_frequency = 3
-    previous_predictions = [None, None]
+    prediction_frequency = 1
     current_predictions = [None, None]
     center_x_list = [None, None]
     center_y_list = [None, None]
+
+    current_sounds = [None, None]
     current_notes = [None, None]
 
     while True:
@@ -146,8 +115,6 @@ if __name__ == "__main__":
         if current_frame % prediction_frequency == 0:
             hand_data = get_landmarks(img)
             if current_predictions:
-                previous_predictions = [None, None]
-                previous_predictions = current_predictions.copy()
                 current_predictions = [None, None]
             if hand_data:
                 for i, hand in enumerate(hand_data):
@@ -170,6 +137,8 @@ if __name__ == "__main__":
                     confidence = prediction[1]
                     center_x_list[0 if prediction[4] == 0 else 1] = prediction[2]
                     center_y_list[0 if prediction[4] == 0 else 1] = prediction[3]
+                    sp.current_sounds[i] = sp.sounds[gesture]
+                    sp.set_volume(sp.channels[i], center_y_list[i], height)
                     cv.putText(black_img, f'Hand {i+1}: {gesture} ({confidence*100:.2f}%)', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=2)   
                     idle_frames[i] = 0
                     
@@ -183,22 +152,24 @@ if __name__ == "__main__":
                 if center_x_list[i] and center_y_list[i]:
                     cv.circle(black_img, (center_x_list[i], center_y_list[i]), 10, (0,255,0), cv.FILLED)
                     # Play the sound
-                    new_note = get_note(center_x_list[i], width)
+                    new_note = sp.get_note(center_x_list[i], width, sp.current_sounds[i])
+                    print(new_note)
                     if new_note != current_notes[i]:
                         if current_notes[i]:
-                            stop_sound(channels[i])
-
-                        play_sound(new_note, violin_sounds, channels[i])
-                        current_notes[i] = new_note
+                            sp.stop_sound(sp.channels[i])
+                        if new_note:
+                            sp.play_sound(new_note, sp.channels[i])
+                            current_notes[i] = new_note
             else:
-                stop_sound(channels[i])
+
+                sp.stop_sound(sp.channels[i])
                     
         # Display FPS
         black_img, present_time = displayFPS(black_img, present_time)
 
         # Display the captures
         cv.imshow('Hand Gesture Recognition', black_img)
-        cv.imshow('Original', img)
+        # cv.imshow('Original', img)
 
         current_frame += 1
         idle_frames[0] += 1
