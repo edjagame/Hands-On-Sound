@@ -2,8 +2,13 @@ import os
 import pygame
 
 class SoundPlayer:
+    scales = ("C", "D", "E", "G", "A", "B", "F#", "C#", "Ab", "Eb", "Bb", "F")
+    modes = ("Major", "Minor")
     def __init__(self, sounds_folder = "resources/sounds", scale = "C", mode = "Major"):
         pygame.mixer.init()
+
+        self.scale = scale
+        self.mode = mode
 
         self.sounds_folder = sounds_folder
         self.channels = {0: pygame.mixer.Channel(0), 1: pygame.mixer.Channel(1)}
@@ -45,6 +50,17 @@ class SoundPlayer:
     def set_volume(self, channel, center_y, height):
         channel.set_volume(1 - center_y / height)
     
+    def set_scale(self, scale, mode):
+
+        self.scale = scale
+        self.mode = mode
+
+        self.sounds["violin"] = self.load_sounds("violin", scale, mode)
+        self.sounds["flute"] = self.load_sounds("flute", scale, mode)
+        self.sounds["snareDrum"] = self.load_sounds("snare", scale, mode)
+        self.sounds["trumpet"] = self.load_sounds("trumpet", scale, mode)
+        self.sounds["generic"] = self.load_sounds("generic", scale, mode)
+
     # get_notes returns the notes of a scale in a given mode
     def get_notes(self, scale, mode) -> list:
         major = {

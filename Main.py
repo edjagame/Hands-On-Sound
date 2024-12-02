@@ -2,6 +2,7 @@ import logging
 import os
 import threading
 import time
+from typing import Tuple
 
 import cv2 as cv
 import mediapipe as mp
@@ -10,11 +11,9 @@ import pygame
 from keras.models import load_model
 
 from sound_player import SoundPlayer
-from typing import Tuple
 
 CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
-
 
 # Sets the camera dimensions to have width of 640px and scales it to the camera aspect ratio of the device
 def setCameraDimensions(capture: cv.VideoCapture) -> Tuple[int, int]:
@@ -68,6 +67,7 @@ def predict_gesture(hand_lms: list) -> Tuple[str, float]:
     return gesture, confidence
 
 if __name__ == "__main__":
+
     #Loads the gesture prediciton model
     model = load_model('hand_gesture_instrument_model.keras')
 
@@ -84,9 +84,12 @@ if __name__ == "__main__":
     # Initialize dimensions
     width, height = setCameraDimensions(capture)
 
+    scale_index = 0
+    mode_index = 0
     # Load sound player module
-    sp = SoundPlayer(scale = "D", mode = "Minor")
-
+    sp = SoundPlayer()
+    sp.set_scale(sp.scales[scale_index], sp.modes[mode_index])
+    
     # Some initial variables
     # present_time is used to calculate the FPS
     # current_frame is used to keep track of the current frame
@@ -97,11 +100,12 @@ if __name__ == "__main__":
     present_time = 0
     current_frame = 0
     idle_frames = [0,0]
-    prediction_frequency = 1
+    prediction_frequency = 3
     current_predictions = [None, None]
     center_x_list = [None, None]
     center_y_list = [None, None]
 
+    previous_sounds = [None, None]
     current_sounds = [None, None]
     current_notes = [None, None]
 
@@ -139,8 +143,11 @@ if __name__ == "__main__":
                     center_y_list[0 if prediction[4] == 0 else 1] = prediction[3]
                     sp.current_sounds[i] = sp.sounds[gesture]
                     sp.set_volume(sp.channels[i], center_y_list[i], height)
-                    cv.putText(black_img, f'Hand {i+1}: {gesture} ({confidence*100:.2f}%)', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=2)   
+                    cv.putText(black_img, f'Hand {i+1}: {gesture}', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=1)   
+                    cv.putText(black_img, f'Scale: {sp.scales[scale_index]}', (400, 30), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=1)
+                    cv.putText(black_img, f'Scale: {sp.modes[mode_index]}', (400, 60), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=1)
                     idle_frames[i] = 0
+
                     
         # # Get the note based on the x position of the hand
         # note_index = int(center_x_list[i] / (CAMERA_WIDTH / len(notes)))
@@ -153,13 +160,14 @@ if __name__ == "__main__":
                     cv.circle(black_img, (center_x_list[i], center_y_list[i]), 10, (0,255,0), cv.FILLED)
                     # Play the sound
                     new_note = sp.get_note(center_x_list[i], width, sp.current_sounds[i])
-                    print(new_note)
-                    if new_note != current_notes[i]:
+
+                    if new_note != current_notes[i] or previous_sounds[i] != sp.current_sounds[i]:
                         if current_notes[i]:
                             sp.stop_sound(sp.channels[i])
                         if new_note:
                             sp.play_sound(new_note, sp.channels[i])
                             current_notes[i] = new_note
+                        previous_sounds[i] = sp.current_sounds[i]
             else:
 
                 sp.stop_sound(sp.channels[i])
@@ -174,10 +182,18 @@ if __name__ == "__main__":
         current_frame += 1
         idle_frames[0] += 1
         idle_frames[1] += 1
-
+        
+        # KEY INPUTS
+        key = cv.waitKey(1) & 0xFF
         # Press d to exit
-        if cv.waitKey(1) &  0xFF==ord('d'):
+        if key == ord('d') or key == 27:
             break
+        elif key == ord('m'):
+            mode_index = (mode_index + 1) % len(sp.modes)
+            sp.set_scale(sp.scales[scale_index], sp.modes[mode_index])
+        elif key == ord('s'):
+            scale_index = (scale_index + 1) % len(sp.scales)
+            sp.set_scale(sp.scales[scale_index], sp.modes[mode_index])
     
     capture.release()
     cv.destroyAllWindows()
