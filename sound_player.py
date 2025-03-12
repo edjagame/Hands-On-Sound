@@ -15,16 +15,28 @@ class SoundPlayer:
         self.sounds = {
             "violin": self.load_sounds("violin", scale, mode),
             "flute": self.load_sounds("flute", scale, mode),
-            "snareDrum": self.load_sounds("snare", scale, mode),
+            "snareDrum": self.load_sounds("snareDrum", scale, mode),
             "trumpet": self.load_sounds("trumpet", scale, mode),
             "generic": self.load_sounds("generic", scale, mode),
             "none": []
         }
         
+        print(self.sounds["snareDrum"])
         self.current_sounds = [self.sounds["none"], self.sounds["none"]]
         self.current_notes = [None, None]
 
     def load_sounds(self, instrument, scale = "C", mode = "Major"):
+        # if instrument == "snareDrum":
+        #     folder = os.path.join(self.sounds_folder, instrument)
+        #     sounds = []
+        #     for i in range(6):
+        #         path = os.path.join(folder, str(i) + ".wav")
+        #         if os.path.exists(path):
+        #             sounds.append(([str(i)], pygame.mixer.Sound(path)))
+        #         else:
+        #             print("File not found: " + path)
+        #     return sounds
+        
         notes = self.get_notes(scale, mode)
         folder = os.path.join(self.sounds_folder, instrument)
         sounds = []
@@ -57,7 +69,7 @@ class SoundPlayer:
 
         self.sounds["violin"] = self.load_sounds("violin", scale, mode)
         self.sounds["flute"] = self.load_sounds("flute", scale, mode)
-        self.sounds["snareDrum"] = self.load_sounds("snare", scale, mode)
+        self.sounds["snareDrum"] = self.load_sounds("snareDrum", scale, mode)
         self.sounds["trumpet"] = self.load_sounds("trumpet", scale, mode)
         self.sounds["generic"] = self.load_sounds("generic", scale, mode)
 

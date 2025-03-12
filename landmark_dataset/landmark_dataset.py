@@ -54,7 +54,7 @@ if __name__ == "__main__":
     # For each image in the folder, get the landmarks and append them to the landmarks list,
     # then append the corresponding label to the labels list
     for gesture in gesture_names:
-        folder_path = f'resources\\{gesture}'
+        folder_path = f'resources\\training_data\\{gesture}'
         for file_name in os.listdir(folder_path):
             image_path = os.path.join(folder_path, file_name)
             logger.info(f"Processing {image_path}")

@@ -100,7 +100,7 @@ if __name__ == "__main__":
     present_time = 0
     current_frame = 0
     idle_frames = [0,0]
-    prediction_frequency = 3
+    prediction_frequency = 1
     current_predictions = [None, None]
     center_x_list = [None, None]
     center_y_list = [None, None]
@@ -149,17 +149,24 @@ if __name__ == "__main__":
                     idle_frames[i] = 0
 
                     
+        
+
         # # Get the note based on the x position of the hand
         # note_index = int(center_x_list[i] / (CAMERA_WIDTH / len(notes)))
         # note = notes[min(note_index, len(notes) - 1)]
 
         for i in range(2):
+            #Draw a line to separate the boundaries of the notes
+            for j in range(1, len(sp.current_sounds[i])):
+                cv.line(black_img, (int(j * width / len(sp.current_sounds[i])), 0), (int(j * width / len(sp.current_sounds[i])), height), (255*i,255,), 1)
+                        
             if idle_frames[i] < prediction_frequency * 5:
             # Draw the center of the hand on the screen
                 if center_x_list[i] and center_y_list[i]:
                     cv.circle(black_img, (center_x_list[i], center_y_list[i]), 10, (0,255,0), cv.FILLED)
                     # Play the sound
                     new_note = sp.get_note(center_x_list[i], width, sp.current_sounds[i])
+                    print(new_note)
 
                     if new_note != current_notes[i] or previous_sounds[i] != sp.current_sounds[i]:
                         if current_notes[i]:
@@ -173,11 +180,11 @@ if __name__ == "__main__":
                 sp.stop_sound(sp.channels[i])
                     
         # Display FPS
-        black_img, present_time = displayFPS(black_img, present_time)
+        # black_img, present_time = displayFPS(black_img, present_time)
 
         # Display the captures
         cv.imshow('Hand Gesture Recognition', black_img)
-        # cv.imshow('Original', img)
+        cv.imshow('Original', img)
 
         current_frame += 1
         idle_frames[0] += 1
