@@ -12,8 +12,8 @@ from keras.models import load_model
 
 from sound_player import SoundPlayer
 
-CAMERA_WIDTH = 640
-CAMERA_HEIGHT = 480
+CAMERA_WIDTH = 1280
+CAMERA_HEIGHT = 960
 
 # Sets the camera dimensions to have width of 640px and scales it to the camera aspect ratio of the device
 def setCameraDimensions(capture: cv.VideoCapture) -> Tuple[int, int]:
@@ -43,7 +43,7 @@ def get_landmarks(image) -> list:
         for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
             lms = []
             # Draws the landmarks on the image
-            mp_draw.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+            # mp_draw.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             for id, lm in enumerate(hand_landmarks.landmark):
                 lm_coords = []
                 # The training data was using right hand, so we mirror the left hand landmarks to match the right hand
@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
         # Display the captures
         cv.imshow('Hand Gesture Recognition', black_img)
-        cv.imshow('Original', img)
+        # cv.imshow('Original', img)
 
         current_frame += 1
         idle_frames[0] += 1
