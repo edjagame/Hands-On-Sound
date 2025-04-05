@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # Convert lists to numpy arrays and save them to a file
     landmarks = np.array(landmarks)
     labels = np.array(labels)
-    np.save('landmarks.npy', landmarks)
-    np.save('labels.npy', labels)
+    np.save('./landmark_dataset/landmarks.npy', landmarks)
+    np.save('./landmark_dataset/labels.npy', labels)
 
     cv.destroyAllWindows()      

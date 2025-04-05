@@ -72,7 +72,7 @@ class SoundPlayer:
         self.sounds["snareDrum"] = self.load_sounds("snareDrum", scale, mode)
         self.sounds["trumpet"] = self.load_sounds("trumpet", scale, mode)
         self.sounds["generic"] = self.load_sounds("generic", scale, mode)
-
+    
     # get_notes returns the notes of a scale in a given mode
     def get_notes(self, scale, mode) -> list:
         major = {
@@ -122,3 +122,56 @@ class SoundPlayer:
                 scale_notes.append(scale_notes.pop(0))
 
         return scale_notes
+    
+    def get_note_names(self, scale, mode) -> list:
+        major = {
+            "C": ["C", "D", "E", "F", "G", "A", "B"],
+            "D": ["D", "E", "F#", "G", "A", "B", "C#"],
+            "E": ["E", "F#", "G#", "A", "B", "C#", "D#"],
+            "G": ["G", "A", "B", "C", "D", "E", "F#"],
+            "A": ["A", "B", "C#", "D", "E", "F#", "G#"],
+            "B": ["B", "C#", "D#", "E", "F#", "G#", "A#"],
+            "F#": ["F#", "G#", "A#", "B", "C#", "D#", "E#"],
+            "C#": ["C#", "D#", "E#", "F#", "G#", "A#", "B#"],
+            "Ab": ["Ab", "Bb", "C", "Db", "Eb", "F", "G"],
+            "Eb": ["Eb", "F", "G", "Ab", "Bb", "C", "D"],
+            "Bb": ["Bb", "C", "D", "Eb", "F", "G", "A"],
+            "F": ["F", "G", "A", "Bb", "C", "D", "E"]
+        }
+
+        minor = {
+            "C": ["C", "D", "Eb", "F", "G", "Ab", "Bb"],
+            "D": ["D", "E", "F", "G", "A", "Bb", "C"],
+            "E": ["E", "F#", "G", "A", "B", "C", "D"],
+            "G": ["G", "A", "Bb", "C", "D", "Eb", "F"],
+            "A": ["A", "B", "C", "D", "E", "F", "G"],
+            "B": ["B", "C#", "D", "E", "F#", "G", "A"],
+            "F#": ["F#", "G#", "A", "B", "C#", "C", "D#"],
+            "C#": ["C#", "D#", "E", "F#", "G#", "A", "B"],
+            "Ab": ["Ab", "Bb", "C", "Db", "Eb", "F", "G"],
+            "Eb": ["Eb", "F", "G", "Ab", "Bb", "C", "Db"],
+            "Bb": ["Bb", "C", "Db", "Eb", "F", "G", "Ab"],
+            "F": ["F", "G", "Ab", "Bb", "C", "Db", "Eb"]
+        }
+
+        if scale not in major:
+            print("Error getting scale")
+            return []
+
+        scale_notes = major[scale]
+        if mode == "Minor":
+            scale_notes = minor[scale]
+
+        #Make C or C charp first in the list
+        if "C" in scale_notes:
+            while scale_notes[0] != "C":
+                scale_notes.append(scale_notes.pop(0))
+        elif "C#" in scale_notes:
+            while scale_notes[0] != "C#":
+                scale_notes.append(scale_notes.pop(0))
+
+        return scale_notes
+
+    # similar to get_notes but returns the note names with proper sharps and flats (e.g. Ab instead of G# if the scale is Ab)
+
+    

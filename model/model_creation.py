@@ -18,7 +18,7 @@ num_classes = len(np.unique(labels))
 labels = to_categorical(labels, num_classes=num_classes)
 
 # Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(landmarks, labels, test_size=0.2, random_state=1111)
+X_train, X_test, y_train, y_test = train_test_split(landmarks, labels, test_size=0.15, random_state=9999)
 
 
 # Define the model
@@ -37,7 +37,7 @@ model = Sequential([
 model.summary()
 # Compile and train the model
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test))
+history = model.fit(X_train, y_train, epochs=35, batch_size=32, validation_data=(X_test, y_test))
 
 # Evaluate model accuracy
 loss, accuracy = model.evaluate(X_test, y_test)

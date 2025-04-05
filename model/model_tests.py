@@ -6,6 +6,7 @@ from keras.models import Sequential, load_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
+import random
 # Load the data obtained in landmark_dataset/
 landmarks = np.load('landmark_dataset/landmarks.npy')
 labels = np.load('landmark_dataset/labels.npy')
@@ -18,9 +19,7 @@ num_classes = len(np.unique(labels))
 labels = to_categorical(labels, num_classes=num_classes)
 
 # Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(landmarks, labels, test_size=0.2, random_state=1111)
-
-
+X_train, X_test, y_train, y_test = train_test_split(landmarks, labels, test_size=0.2, random_state=random.randint(0, 10000))
 
 #Loads the gesture prediciton model
 model = load_model('hand_gesture_instrument_model.keras')

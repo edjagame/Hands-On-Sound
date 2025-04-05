@@ -3,6 +3,7 @@ import os
 import threading
 import time
 from typing import Tuple
+from enum import Enum
 
 import cv2 as cv
 import mediapipe as mp
@@ -14,7 +15,10 @@ from sound_player import SoundPlayer
 
 CAMERA_WIDTH = 1280
 CAMERA_HEIGHT = 960
-
+RED = (0, 0, 255)
+GREEN = (0, 255, 0)
+BLUE = (255, 0, 0)
+WHITE = (255, 255, 255)
 # Sets the camera dimensions to have width of 640px and scales it to the camera aspect ratio of the device
 def setCameraDimensions(capture: cv.VideoCapture) -> Tuple[int, int]:
     frame  = capture.read()[1]
@@ -109,12 +113,20 @@ if __name__ == "__main__":
     current_sounds = [None, None]
     current_notes = [None, None]
 
+
+
     while True:
         # Reads the current frame
         isTrue, initial_img = capture.read() 
         img = cv.flip(cv.resize(initial_img, (width, height)),1)
         black_img = np.zeros((height, width, 3), np.uint8)
-
+        #Draw a line to separate the boundaries of the notes
+        for j in range(12):
+            cv.line(black_img, (int(j * width / 12), 0), (int(j * width / 12), height), WHITE, 1)
+            cv.putText(black_img, sp.get_notes(sp.scale, sp.mode)[j % 7], (int(j * width / 12) + 50, 100), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=2)
+        cv.putText(black_img, f'Scale: {sp.scales[scale_index]}', (width - 200, 30), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=1)
+        cv.putText(black_img, f'Mode: {sp.modes[mode_index]}', (width - 200, 60), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=1)
+        
         # Get hand landmarks, happens every prediction_frequency frames
         if current_frame % prediction_frequency == 0:
             hand_data = get_landmarks(img)
@@ -143,30 +155,24 @@ if __name__ == "__main__":
                     center_y_list[0 if prediction[4] == 0 else 1] = prediction[3]
                     sp.current_sounds[i] = sp.sounds[gesture]
                     sp.set_volume(sp.channels[i], center_y_list[i], height)
-                    cv.putText(black_img, f'Hand {i+1}: {gesture}', (20, 30 * (i+1)), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=1)   
-                    cv.putText(black_img, f'Scale: {sp.scales[scale_index]}', (400, 30), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=1)
-                    cv.putText(black_img, f'Scale: {sp.modes[mode_index]}', (400, 60), cv.FONT_HERSHEY_TRIPLEX, 1, (0,255,0), thickness=1)
+                    cv.putText(black_img, f'Hand {i+1}: {gesture if gesture != "generic" else "rest"}', (20, 30 * (i+1)), cv.FONT_HERSHEY_PLAIN, 2, (128,255,128), thickness=1)   
                     idle_frames[i] = 0
-
-                    
-        
 
         # # Get the note based on the x position of the hand
         # note_index = int(center_x_list[i] / (CAMERA_WIDTH / len(notes)))
         # note = notes[min(note_index, len(notes) - 1)]
 
         for i in range(2):
-            #Draw a line to separate the boundaries of the notes
-            for j in range(1, len(sp.current_sounds[i])):
-                cv.line(black_img, (int(j * width / len(sp.current_sounds[i])), 0), (int(j * width / len(sp.current_sounds[i])), height), (255*i,255,), 1)
-                        
+               
             if idle_frames[i] < prediction_frequency * 5:
             # Draw the center of the hand on the screen
                 if center_x_list[i] and center_y_list[i]:
-                    cv.circle(black_img, (center_x_list[i], center_y_list[i]), 10, (0,255,0), cv.FILLED)
+                    if i == 0:
+                        cv.circle(black_img, (center_x_list[i], center_y_list[i]), 10, (255,128,128), cv.FILLED)
+                    if i == 1:
+                        cv.circle(black_img, (center_x_list[i], center_y_list[i]), 10, (128,128,255), cv.FILLED)
                     # Play the sound
                     new_note = sp.get_note(center_x_list[i], width, sp.current_sounds[i])
-                    print(new_note)
 
                     if new_note != current_notes[i] or previous_sounds[i] != sp.current_sounds[i]:
                         if current_notes[i]:
@@ -184,10 +190,11 @@ if __name__ == "__main__":
 
         # Display the captures
         cv.imshow('Hand Gesture Recognition', black_img)
-        # cv.imshow('Original', img)
+        cv.imshow('Original', cv.resize(img, (320, 240)))
 
         current_frame += 1
         idle_frames[0] += 1
+
         idle_frames[1] += 1
         
         # KEY INPUTS
