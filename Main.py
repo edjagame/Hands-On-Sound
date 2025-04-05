@@ -5,12 +5,14 @@ import time
 from typing import Tuple
 from enum import Enum
 
+import tkinter as tk
+from tkinter import ttk
+
 import cv2 as cv
 import mediapipe as mp
 import numpy as np
 import pygame
 from keras.models import load_model
-
 from sound_player import SoundPlayer
 
 CAMERA_WIDTH = 1280
@@ -70,7 +72,40 @@ def predict_gesture(hand_lms: list) -> Tuple[str, float]:
     confidence = np.max(prediction)
     return gesture, confidence
 
+def settings():
+    root = tk.Tk()
+    frm = ttk.Frame(root, padding=10)
+    frm.grid()
+
+    ttk.Label(frm, text="Key").grid(column=0, row=0)
+    key = tk.StringVar(value="C")
+    key_dropdown = ttk.Combobox(
+        frm, textvariable=key, values=["C", "D", "E", "G", "A", "B", "F#", "C#", "Ab", "Eb", "Bb", "F"]
+    )
+    key_dropdown.grid(column=1, row=0)
+
+    mode = tk.StringVar(value="major")
+    major_radio = ttk.Radiobutton(
+        frm, text="Major", variable=mode, value="major"
+    ).grid(column=0, row=2)
+    minor_radio = ttk.Radiobutton(
+        frm, text="Minor", variable=mode, value="minor"
+    ).grid(column=1, row=2)
+
+    settings = {}
+    def confirm():
+        settings['key'] = key.get()
+        settings['mode'] = mode.get()
+        root.destroy()
+
+    ttk.Button(frm, text="Confirm", command=confirm).grid(column=0, row=3)
+    root.mainloop()
+    return settings['key'], settings['mode']
+
 if __name__ == "__main__":
+
+    settings = settings()
+
 
     #Loads the gesture prediciton model
     model = load_model('hand_gesture_instrument_model.keras')
@@ -92,7 +127,7 @@ if __name__ == "__main__":
     mode_index = 0
     # Load sound player module
     sp = SoundPlayer()
-    sp.set_scale(sp.scales[scale_index], sp.modes[mode_index])
+    sp.set_scale(settings[0], settings[1])
     
     # Some initial variables
     # present_time is used to calculate the FPS
@@ -113,7 +148,7 @@ if __name__ == "__main__":
     current_sounds = [None, None]
     current_notes = [None, None]
 
-
+    
 
     while True:
         # Reads the current frame
@@ -123,9 +158,9 @@ if __name__ == "__main__":
         #Draw a line to separate the boundaries of the notes
         for j in range(12):
             cv.line(black_img, (int(j * width / 12), 0), (int(j * width / 12), height), WHITE, 1)
-            cv.putText(black_img, sp.get_notes(sp.scale, sp.mode)[j % 7], (int(j * width / 12) + 50, 100), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=2)
-        cv.putText(black_img, f'Scale: {sp.scales[scale_index]}', (width - 200, 30), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=1)
-        cv.putText(black_img, f'Mode: {sp.modes[mode_index]}', (width - 200, 60), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=1)
+            cv.putText(black_img, sp.get_note_names(sp.scale, sp.mode)[j % 7], (int(j * width / 12) + 50, 100), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=2)
+        cv.putText(black_img, f'Key: {sp.scale}', (width - 200, 30), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=1)
+        cv.putText(black_img, f'Mode: {sp.mode}', (width - 200, 60), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=1)
         
         # Get hand landmarks, happens every prediction_frequency frames
         if current_frame % prediction_frequency == 0:
@@ -155,7 +190,7 @@ if __name__ == "__main__":
                     center_y_list[0 if prediction[4] == 0 else 1] = prediction[3]
                     sp.current_sounds[i] = sp.sounds[gesture]
                     sp.set_volume(sp.channels[i], center_y_list[i], height)
-                    cv.putText(black_img, f'Hand {i+1}: {gesture if gesture != "generic" else "rest"}', (20, 30 * (i+1)), cv.FONT_HERSHEY_PLAIN, 2, (128,255,128), thickness=1)   
+                    cv.putText(black_img, f'Hand {i+1}: {gesture if gesture != "generic" else "rest"}', (20, 30 * (i+1)), cv.FONT_HERSHEY_PLAIN, 3, (255-i*128,128,128+i*128), thickness=2)   
                     idle_frames[i] = 0
 
         # # Get the note based on the x position of the hand
@@ -199,9 +234,11 @@ if __name__ == "__main__":
         
         # KEY INPUTS
         key = cv.waitKey(1) & 0xFF
-        # Press d to exit
-        if key == ord('d') or key == 27:
+
+        # Press d or esc to exit
+        if key == ord('q') or key == 27:
             break
+
         elif key == ord('m'):
             mode_index = (mode_index + 1) % len(sp.modes)
             sp.set_scale(sp.scales[scale_index], sp.modes[mode_index])
