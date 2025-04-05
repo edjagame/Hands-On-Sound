@@ -238,13 +238,6 @@ if __name__ == "__main__":
         # Press d or esc to exit
         if key == ord('q') or key == 27:
             break
-
-        elif key == ord('m'):
-            mode_index = (mode_index + 1) % len(sp.modes)
-            sp.set_scale(sp.scales[scale_index], sp.modes[mode_index])
-        elif key == ord('s'):
-            scale_index = (scale_index + 1) % len(sp.scales)
-            sp.set_scale(sp.scales[scale_index], sp.modes[mode_index])
     
     capture.release()
     cv.destroyAllWindows()
