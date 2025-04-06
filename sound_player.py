@@ -21,7 +21,6 @@ class SoundPlayer:
             "none": []
         }
         
-        print(self.sounds["snareDrum"])
         self.current_sounds = [self.sounds["none"], self.sounds["none"]]
         self.current_notes = [None, None]
 

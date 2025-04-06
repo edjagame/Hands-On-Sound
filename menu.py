@@ -3,6 +3,7 @@ from tkinter import ttk
 
 def settings():
     root = tk.Tk()
+    root.title("Hands-On Sound Settings")
     frm = ttk.Frame(root, padding=10)
     frm.grid()
 

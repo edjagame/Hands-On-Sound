@@ -74,7 +74,8 @@ def predict_gesture(hand_lms: list) -> Tuple[str, float]:
 
 def settings():
     root = tk.Tk()
-    frm = ttk.Frame(root, padding=10)
+    root.title("Hands-On Sound Settings")
+    frm = ttk.Frame(root, padding=30)
     frm.grid()
 
     ttk.Label(frm, text="Key").grid(column=0, row=0)
@@ -159,6 +160,15 @@ if __name__ == "__main__":
         for j in range(12):
             cv.line(black_img, (int(j * width / 12), 0), (int(j * width / 12), height), WHITE, 1)
             cv.putText(black_img, sp.get_note_names(sp.scale, sp.mode)[j % 7], (int(j * width / 12) + 50, 100), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=2)
+            match j % 4:
+                case 0:
+                    cv.putText(black_img, 'eighth', (int(j * width / 12) + 10, height-200), cv.FONT_HERSHEY_PLAIN, 1, WHITE, thickness=2)
+                case 1:
+                    cv.putText(black_img, 'quarter', (int(j * width / 12) + 10, height-200), cv.FONT_HERSHEY_PLAIN, 1, WHITE, thickness=2)
+                case 2:
+                    cv.putText(black_img, 'half', (int(j * width / 12) + 10, height-200), cv.FONT_HERSHEY_PLAIN, 1, WHITE, thickness=2)
+                case 3:
+                    cv.putText(black_img, 'whole', (int(j * width / 12) + 10, height-200), cv.FONT_HERSHEY_PLAIN, 1, WHITE, thickness=2)
         cv.putText(black_img, f'Key: {sp.scale}', (width - 200, 30), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=1)
         cv.putText(black_img, f'Mode: {sp.mode}', (width - 200, 60), cv.FONT_HERSHEY_PLAIN, 2, WHITE, thickness=1)
         
@@ -190,7 +200,7 @@ if __name__ == "__main__":
                     center_y_list[0 if prediction[4] == 0 else 1] = prediction[3]
                     sp.current_sounds[i] = sp.sounds[gesture]
                     sp.set_volume(sp.channels[i], center_y_list[i], height)
-                    cv.putText(black_img, f'Hand {i+1}: {gesture if gesture != "generic" else "rest"}', (20, 30 * (i+1)), cv.FONT_HERSHEY_PLAIN, 3, (255-i*128,128,128+i*128), thickness=2)   
+                    cv.putText(black_img, f'{"Left" if i == 0 else "Right"} Hand: {gesture if gesture != "generic" else "rest"}', (20, 30 * (i+1)), cv.FONT_HERSHEY_PLAIN, 3, (255-i*128,128,128+i*128), thickness=2)   
                     idle_frames[i] = 0
 
         # # Get the note based on the x position of the hand
