@@ -1,4 +1,7 @@
 __pycache__/
 .venv/
-resources/training_data/
+logs/
+data/training_data/
 AGENTS.md
+data/
+.agents/
