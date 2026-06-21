@@ -1,7 +1,10 @@
 __pycache__/
 .venv/
 logs/
-data/training_data/
+hagrid/
+annotations/
 AGENTS.md
-data/
 .agents/
+node_modules/
+dist/
+*.tsbuildinfo
