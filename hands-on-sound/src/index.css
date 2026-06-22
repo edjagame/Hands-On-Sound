@@ -1,0 +1,34 @@
+:root {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  color: #523b22;
+  background: #fff5cf;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: #fff5cf;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255, 221, 128, 0.9), transparent 38%),
+    radial-gradient(circle at 88% 85%, rgba(244, 164, 83, 0.55), transparent 42%),
+    linear-gradient(135deg, #fff9df 0%, #fff0bd 52%, #ffe3aa 100%);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
