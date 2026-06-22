@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import HandTracker from './HandTracker'
 import HandCanvas from './HandCanvas'
+import GestureClassifier from './GestureClassifier'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 
 const CAMERA_SIZE = {
@@ -92,7 +93,9 @@ function CameraPreview() {
         isCameraOn={isCameraOn}
         onResults={setResults}
       />
-
+      <GestureClassifier 
+        results={results}
+      />
       <button
         type="button"
         onClick={toggleCamera}
