@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import HandTracker from './HandTracker'
-import { HandLandmarker } from '@mediapipe/tasks-vision'
+import HandCanvas from './HandCanvas'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
+
+const CAMERA_SIZE = {
+  width:640,
+  height:360
+}
 
 function stopMediaStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((track) => track.stop())
@@ -23,8 +28,8 @@ function CameraPreview() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: CAMERA_SIZE.width },
+          height: { ideal: CAMERA_SIZE.height },
         },
         audio: false,
       })
@@ -54,6 +59,7 @@ function CameraPreview() {
       videoRef.current.srcObject = null
     }
 
+    setResults(null)
     setIsCameraOn(false)
   }
 
@@ -73,12 +79,20 @@ function CameraPreview() {
 
   return (
     <div className="camera">
-      <video ref={videoRef} autoPlay muted playsInline />
+      <div className="camera-display">
+        <video ref={videoRef} autoPlay muted playsInline />
+        <HandCanvas 
+          results={results} 
+          canvasWidth={CAMERA_SIZE.width}
+          canvasHeight={CAMERA_SIZE.height}
+        />
+      </div>
       <HandTracker
         videoRef={videoRef}
         isCameraOn={isCameraOn}
         onResults={setResults}
       />
+
       <button
         type="button"
         onClick={toggleCamera}
@@ -90,6 +104,7 @@ function CameraPreview() {
             ? 'Stop Camera'
             : 'Start Camera'}
       </button>
+
       {errorMessage && <p role="alert">{errorMessage}</p>}
     </div>
   )

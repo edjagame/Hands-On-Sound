@@ -1,0 +1,22 @@
+  .camera-display {
+    position: relative;
+    width: min(100%, 1280px);
+    aspect-ratio: 16 / 9;
+    transform: scaleX(-1); /* mirrors the camera */
+  }
+
+  .camera-display video,
+  .camera-display canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .camera-display video {
+    object-fit: cover;
+  }
+
+  .camera-display canvas {
+    pointer-events: none;
+  }

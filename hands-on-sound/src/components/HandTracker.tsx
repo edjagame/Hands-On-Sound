@@ -26,8 +26,8 @@ function HandTracker({ videoRef, isCameraOn, onResults }: HandTrackerProps) {
 
       instance = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
-          modelAssetPath:
-            'models/hand_landmarker.task'
+          modelAssetPath: 'models/hand_landmarker.task',
+          delegate: 'GPU'
         },
         runningMode: 'VIDEO',
         numHands: 2,

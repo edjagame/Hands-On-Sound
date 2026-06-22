@@ -1,4 +1,5 @@
 import CameraPreview from './components/CameraPreview'
+import './App.css'
 
 function App() {
   return (
