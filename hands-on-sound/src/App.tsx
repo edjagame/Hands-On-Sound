@@ -1,5 +1,4 @@
 import CameraPreview from './components/CameraPreview'
-import Message from './components/Message'
 
 function App() {
   return (
