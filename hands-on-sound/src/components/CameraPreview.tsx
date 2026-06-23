@@ -3,6 +3,7 @@ import HandTracker from './HandTracker'
 import HandCanvas from './HandCanvas'
 import GestureClassifier from './GestureClassifier'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
+import type { GesturePrediction } from '../gesture'
 
 const CAMERA_SIZE = {
   width:640,
@@ -20,6 +21,7 @@ function CameraPreview() {
   const [isCameraStarting, setIsCameraStarting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [results, setResults] = useState<HandLandmarkerResult | null>(null)
+  const [prediction, setPrediction] = useState<GesturePrediction | null>(null)
 
   async function startCamera() {
     setErrorMessage(null)
@@ -61,6 +63,7 @@ function CameraPreview() {
     }
 
     setResults(null)
+    setPrediction(null)
     setIsCameraOn(false)
   }
 
@@ -95,7 +98,16 @@ function CameraPreview() {
       />
       <GestureClassifier 
         results={results}
+        onPredictionChange={setPrediction}
       />
+      {prediction ? (
+        <div className="prediction">
+          <p>Gesture: {prediction.gesture}</p>
+          <p>Confidence: {(prediction.confidence * 100).toFixed(1)}%</p>
+        </div>
+      ) : (
+        <p>Gesture: no hand detected</p>
+      )}
       <button
         type="button"
         onClick={toggleCamera}

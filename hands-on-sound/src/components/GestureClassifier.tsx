@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 import { classifyGesture } from '../classification/gestureClassifier'
 import type { Gesture, GesturePrediction } from '../gesture'
 
 interface GestureClassifierProps {
   results: HandLandmarkerResult | null
+  onPredictionChange: (prediction: GesturePrediction | null) => void
 }
 
 const HISTORY_SIZE = 5
@@ -29,8 +30,10 @@ function getMajorityPrediction(
   })
 }
 
-function GestureClassifier({results}: GestureClassifierProps) {
-  const [prediction, setPrediction] = useState<GesturePrediction | null>(null)
+function GestureClassifier({
+  results,
+  onPredictionChange,
+}: GestureClassifierProps) {
   const predictionHistoryRef = useRef<GesturePrediction[]>([])
   const inferenceRunningRef = useRef<boolean>(false)
 
@@ -38,6 +41,7 @@ function GestureClassifier({results}: GestureClassifierProps) {
     const landmarks = results?.landmarks[0]
     if (!landmarks) {
       predictionHistoryRef.current = []
+      onPredictionChange(null)
       return
     }
 
@@ -57,7 +61,7 @@ function GestureClassifier({results}: GestureClassifierProps) {
             history.shift()
           }
 
-          setPrediction(getMajorityPrediction(history))
+          onPredictionChange(getMajorityPrediction(history))
         }
       })
       .catch((error: unknown) => {
@@ -70,19 +74,9 @@ function GestureClassifier({results}: GestureClassifierProps) {
     return () => {
       cancelled = true
     }
-  }, [results])
+  }, [onPredictionChange, results])
 
-  const hasDetectedHand = Boolean(results?.landmarks[0])
-
-  if (!hasDetectedHand || !prediction) {
-    return <p>Gesture: no hand detected</p> 
-  }
-  return (
-    <div className = "prediction">
-      <p>Gesture: {prediction.gesture}</p>
-      <p>Confidence: {prediction.confidence * 100}%</p>
-    </div>
-  )
+  return null
 }
 
 export default GestureClassifier
