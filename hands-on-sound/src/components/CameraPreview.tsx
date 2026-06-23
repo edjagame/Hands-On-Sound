@@ -4,11 +4,18 @@ import HandCanvas from './HandCanvas'
 import GestureClassifier from './GestureClassifier'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 import type { GesturePrediction } from '../gesture'
+import { SampleAudioEngine, getDefaultNote } from '../audio/sampleAudioEngine'
+import {
+  getInstrumentForGesture,
+  type Instrument,
+} from '../audio/types'
 
 const CAMERA_SIZE = {
   width:640,
   height:360
 }
+
+const MIN_AUDIO_CONFIDENCE = 0.6
 
 function stopMediaStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((track) => track.stop())
@@ -17,11 +24,16 @@ function stopMediaStream(stream: MediaStream | null) {
 function CameraPreview() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const [audioEngine] = useState(() => new SampleAudioEngine())
   const [isCameraOn, setIsCameraOn] = useState(false)
   const [isCameraStarting, setIsCameraStarting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [results, setResults] = useState<HandLandmarkerResult | null>(null)
   const [prediction, setPrediction] = useState<GesturePrediction | null>(null)
+  const activeInstrument: Instrument =
+    isCameraOn && prediction && prediction.confidence >= MIN_AUDIO_CONFIDENCE
+      ? getInstrumentForGesture(prediction.gesture)
+      : 'silent'
 
   async function startCamera() {
     setErrorMessage(null)
@@ -64,6 +76,7 @@ function CameraPreview() {
 
     setResults(null)
     setPrediction(null)
+    audioEngine.stop()
     setIsCameraOn(false)
   }
 
@@ -78,8 +91,20 @@ function CameraPreview() {
 
   useEffect(() => {
     // Release the camera if the component is removed while the stream is active.
-    return () => stopMediaStream(streamRef.current)
-  }, [])
+    return () => {
+      stopMediaStream(streamRef.current)
+      audioEngine.dispose()
+    }
+  }, [audioEngine])
+
+  useEffect(() => {
+    if (activeInstrument === 'silent') {
+      audioEngine.stop()
+      return
+    }
+
+    audioEngine.play(activeInstrument, getDefaultNote(activeInstrument))
+  }, [activeInstrument, audioEngine])
 
   return (
     <div className="camera">
@@ -104,9 +129,13 @@ function CameraPreview() {
         <div className="prediction">
           <p>Gesture: {prediction.gesture}</p>
           <p>Confidence: {(prediction.confidence * 100).toFixed(1)}%</p>
+          <p>Instrument: {activeInstrument}</p>
         </div>
       ) : (
-        <p>Gesture: no hand detected</p>
+        <div className="prediction">
+          <p>Gesture: no hand detected</p>
+          <p>Instrument: silent</p>
+        </div>
       )}
       <button
         type="button"
