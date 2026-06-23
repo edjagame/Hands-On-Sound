@@ -1,21 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
-import * as ort from 'onnxruntime-web';
+import * as ort from 'onnxruntime-web'
+import { GESTURES, type GesturePrediction } from '../gesture'
 
 interface GestureClassifierProps {
   results: HandLandmarkerResult | null
 }
-
-export const GESTURES = [
-  'fist',
-  'ok',
-  'palm',
-  'peace',
-  'rock',
-  'stop',
-  'no_gesture',
-] as const
 
 const sessionPromise = ort.InferenceSession.create(
   `${import.meta.env.BASE_URL}models/hand_sign_model.onnx`,
@@ -23,13 +14,6 @@ const sessionPromise = ort.InferenceSession.create(
     executionProviders: ['wasm'],
   },
 )
-
-export type Gesture = (typeof GESTURES)[number]
-
-export interface GesturePrediction {
-  gesture: Gesture
-  confidence: number
-}
 
 function createInputTensor(landmarks: NormalizedLandmark[]): ort.Tensor {
   if (landmarks.length !== 21) {
@@ -76,12 +60,10 @@ async function classifyGesture(
 function GestureClassifier({results}: GestureClassifierProps) {
   const [prediction, setPrediction] = useState<GesturePrediction | null>(null)
   const inferenceRunningRef = useRef<boolean>(false)
+
   useEffect(() => {
     const landmarks = results?.landmarks[0]
-    if (!landmarks) {
-      setPrediction(null)
-      return
-    }
+    if (!landmarks) return
 
     if (inferenceRunningRef.current) return
 
@@ -104,10 +86,11 @@ function GestureClassifier({results}: GestureClassifierProps) {
     return () => {
       cancelled = true
     }
-
   }, [results])
 
-  if (!prediction) {
+  const hasDetectedHand = Boolean(results?.landmarks[0])
+
+  if (!hasDetectedHand || !prediction) {
     return <p>Gesture: no hand detected</p>
   }
   return <p>Gesture: {prediction.gesture}</p>

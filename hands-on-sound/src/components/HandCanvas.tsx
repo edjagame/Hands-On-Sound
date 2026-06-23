@@ -25,12 +25,12 @@ function HandCanvas ({results, canvasHeight, canvasWidth}: HandCanvasProps){
                 landmarks,
                 HandLandmarker.HAND_CONNECTIONS,
                 {
-                    color : "#00FF00",
+                    color : "#FDF8E1",
                     lineWidth: 5
                 }
             );
             drawingUtils.drawLandmarks( landmarks, {
-                color: "#FF0000",
+                color: "#FF6E00",
                 lineWidth: 1
             });
         }   
