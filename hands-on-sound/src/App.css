@@ -1,12 +1,59 @@
 .app {
   min-height: 100vh;
   display: grid;
-  place-items: center;
+  grid-template-rows: auto 1fr auto;
   padding: 2rem;
+  gap: 1.5rem;
+}
+
+.app-header,
+.app-footer {
+  min-height: 1px;
+}
+
+.app-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(28rem, min(50vw, 800px)) minmax(12rem, 18rem);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.app-column-center {
+  display: flex;
+  justify-content: center;
+}
+
+.settings {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #edc988;
+  border-radius: 0.75rem;
+  background: rgba(255, 246, 217, 0.8);
+  box-shadow: 0 1rem 2rem rgba(181, 112, 34, 0.12);
+}
+
+.settings h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.settings-field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.settings-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #e5ad5d;
+  border-radius: 0.5rem;
+  background: #fffaf0;
+  color: inherit;
 }
 
 .camera {
-  width: min(50vw, 800px);
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -91,9 +138,13 @@
   text-align: center;
 }
 
-@media (max-width: 900px) {
-  .camera {
-    width: min(82vw, 640px);
+@media (max-width: 1100px) {
+  .app-main {
+    grid-template-columns: 1fr;
+  }
+
+  .app-column-left {
+    display: none;
   }
 }
 

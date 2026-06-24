@@ -9,6 +9,7 @@ import {
   getInstrumentForGesture,
   type Instrument,
 } from '../audio/types'
+import type { AppSettings } from '../settings'
 
 const CAMERA_SIZE = {
   width:640,
@@ -17,11 +18,23 @@ const CAMERA_SIZE = {
 
 const MIN_AUDIO_CONFIDENCE = 0.6
 
+function getNoteForSettings(settings: AppSettings): string {
+  if (settings.numNotes < 1) {
+    return getDefaultNote()
+  }
+
+  return getDefaultNote()
+}
+
 function stopMediaStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((track) => track.stop())
 }
 
-function CameraPreview() {
+interface CameraPreviewProps {
+  settings: AppSettings
+}
+
+function CameraPreview({ settings }: CameraPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [audioEngine] = useState(() => new SampleAudioEngine())
@@ -34,6 +47,7 @@ function CameraPreview() {
     isCameraOn && prediction && prediction.confidence >= MIN_AUDIO_CONFIDENCE
       ? getInstrumentForGesture(prediction.gesture)
       : 'silent'
+  const activeNote = getNoteForSettings(settings)
 
   async function startCamera() {
     setErrorMessage(null)
@@ -103,8 +117,8 @@ function CameraPreview() {
       return
     }
 
-    audioEngine.play(activeInstrument, getDefaultNote(activeInstrument))
-  }, [activeInstrument, audioEngine])
+    audioEngine.play(activeInstrument, activeNote)
+  }, [activeInstrument, activeNote, audioEngine])
 
   return (
     <div className="camera">
