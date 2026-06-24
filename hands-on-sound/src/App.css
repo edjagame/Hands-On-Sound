@@ -42,7 +42,12 @@
   gap: 0.5rem;
 }
 
-.settings-field input {
+.settings-field + .settings-field {
+  margin-top: 1rem;
+}
+
+.settings-field input,
+.settings-field select {
   width: 100%;
   min-width: 0;
   padding: 0.5rem 0.65rem;

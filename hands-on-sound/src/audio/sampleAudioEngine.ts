@@ -5,10 +5,80 @@ interface VoiceState {
   key: string
 }
 
+const MELODIC_SAMPLE_NOTES = new Set([
+  'A#4',
+  'A4',
+  'B4',
+  'C#4',
+  'C#5',
+  'C4',
+  'C5',
+  'D#4',
+  'D#5',
+  'D4',
+  'D5',
+  'E4',
+  'E5',
+  'F#4',
+  'F#5',
+  'F4',
+  'F5',
+  'G#4',
+  'G#5',
+  'G4',
+  'G5',
+])
+
+const SHARP_TO_LOWER_NATURAL: Record<string, string> = {
+  'C#': 'C',
+  'D#': 'D',
+  'F#': 'F',
+  'G#': 'G',
+  'A#': 'A',
+}
+
 function getSampleUrl(instrument: Exclude<Instrument, 'silent'>, note: string) {
-  const fileName = `${encodeURIComponent(note)}.wav`
+  if (instrument === 'snare') {
+    return `${import.meta.env.BASE_URL}sounds/snare/snare.wav`
+  }
+
+  const fileName = `${note.replace('#', '-sharp')}.wav`
 
   return `${import.meta.env.BASE_URL}sounds/${instrument}/${fileName}`
+}
+
+function getFallbackSampleNote(
+  instrument: Exclude<Instrument, 'silent'>,
+  note: string,
+): string {
+  if (instrument === 'snare' || MELODIC_SAMPLE_NOTES.has(note)) {
+    return note
+  }
+
+  const match = note.match(/^([A-G]#?)(\d)$/)
+
+  if (!match) {
+    return note
+  }
+
+  const [, noteName, octave] = match
+  const lowerNaturalNote = SHARP_TO_LOWER_NATURAL[noteName]
+
+  if (lowerNaturalNote) {
+    const naturalFallback = `${lowerNaturalNote}${octave}`
+
+    if (MELODIC_SAMPLE_NOTES.has(naturalFallback)) {
+      return naturalFallback
+    }
+  }
+
+  const previousOctaveFallback = `${noteName}${Number(octave) - 1}`
+
+  if (MELODIC_SAMPLE_NOTES.has(previousOctaveFallback)) {
+    return previousOctaveFallback
+  }
+
+  return note
 }
 
 export class SampleAudioEngine implements AudioEngine {
@@ -25,7 +95,8 @@ export class SampleAudioEngine implements AudioEngine {
       return
     }
 
-    const key = `${instrument}:${note}`
+    const sampleNote = getFallbackSampleNote(instrument, note)
+    const key = instrument === 'snare' ? 'snare' : `${instrument}:${sampleNote}`
     const nextVolume = Number.isFinite(volume)
       ? Math.min(Math.max(volume, 0), 1)
       : 0.75
@@ -39,7 +110,7 @@ export class SampleAudioEngine implements AudioEngine {
 
     this.stop(voiceId)
 
-    const audio = new Audio(getSampleUrl(instrument, note))
+    const audio = new Audio(getSampleUrl(instrument, sampleNote))
     audio.loop = instrument !== 'snare'
     audio.volume = nextVolume
 

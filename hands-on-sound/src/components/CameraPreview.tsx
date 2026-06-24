@@ -62,7 +62,12 @@ function CameraPreview({ settings }: CameraPreviewProps) {
         ? getInstrumentForGesture(prediction.gesture)
         : 'silent'
     const noteX = handCenter ? 1 - handCenter.x : undefined
-    const note = getNoteForHandPosition(noteX, settings.numNotes)
+    const note = getNoteForHandPosition(
+      noteX,
+      settings.numNotes,
+      settings.key,
+      settings.mode,
+    )
     const volume = getVolumeForHandPosition(handCenter?.y)
 
     return {
@@ -71,7 +76,14 @@ function CameraPreview({ settings }: CameraPreviewProps) {
       note,
       volume,
     }
-  }, [isCameraOn, predictions, results, settings.numNotes])
+  }, [
+    isCameraOn,
+    predictions,
+    results,
+    settings.key,
+    settings.mode,
+    settings.numNotes,
+  ])
 
   async function startCamera() {
     setErrorMessage(null)
