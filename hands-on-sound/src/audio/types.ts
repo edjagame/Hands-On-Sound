@@ -3,7 +3,7 @@ import type { Gesture } from '../gesture'
 export type Instrument = 'violin' | 'flute' | 'trumpet' | 'snare' | 'silent'
 
 export interface AudioEngine {
-  play: (instrument: Instrument, note: string) => void
+  play: (instrument: Instrument, note: string, volume: number) => void
   stop: () => void
   dispose: () => void
 }

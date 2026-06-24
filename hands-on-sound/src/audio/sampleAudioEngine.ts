@@ -10,15 +10,19 @@ export class SampleAudioEngine implements AudioEngine {
   private currentAudio: HTMLAudioElement | null = null
   private currentKey: string | null = null
 
-  play(instrument: Instrument, note: string): void {
+  play(instrument: Instrument, note: string, volume: number): void {
     if (instrument === 'silent') {
       this.stop()
       return
     }
 
     const key = `${instrument}:${note}`
+    const nextVolume = Number.isFinite(volume)
+      ? Math.min(Math.max(volume, 0), 1)
+      : 0.75
 
     if (this.currentKey === key && this.currentAudio) {
+      this.currentAudio.volume = nextVolume
       return
     }
 
@@ -26,7 +30,7 @@ export class SampleAudioEngine implements AudioEngine {
 
     const audio = new Audio(getSampleUrl(instrument, note))
     audio.loop = instrument !== 'snare'
-    audio.volume = 0.75
+    audio.volume = nextVolume
 
     this.currentAudio = audio
     this.currentKey = key

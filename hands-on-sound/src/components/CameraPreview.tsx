@@ -6,6 +6,7 @@ import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 import type { GesturePrediction } from '../gesture'
 import { SampleAudioEngine } from '../audio/sampleAudioEngine'
 import { getNoteForHandPosition } from '../audio/notes'
+import { getVolumeForHandPosition } from '../audio/volume'
 import {
   getInstrumentForGesture,
   type Instrument,
@@ -45,6 +46,8 @@ function CameraPreview({ settings }: CameraPreviewProps) {
     activeHandCenterX,
     settings.numNotes,
   )
+  const activeHandCenterY = results?.landmarks[0]?.[9]?.y
+  const activeVolume = getVolumeForHandPosition(activeHandCenterY)
 
   async function startCamera() {
     setErrorMessage(null)
@@ -114,8 +117,8 @@ function CameraPreview({ settings }: CameraPreviewProps) {
       return
     }
 
-    audioEngine.play(activeInstrument, activeNote)
-  }, [activeInstrument, activeNote, audioEngine])
+    audioEngine.play(activeInstrument, activeNote, activeVolume)
+  }, [activeInstrument, activeNote, activeVolume, audioEngine])
 
   return (
     <div className="camera">
@@ -142,12 +145,19 @@ function CameraPreview({ settings }: CameraPreviewProps) {
           <p>Confidence: {(prediction.confidence * 100).toFixed(1)}%</p>
           <p>Instrument: {activeInstrument}</p>
           <p>Note: {activeInstrument === 'silent' ? 'none' : activeNote}</p>
+          <p>
+            Volume:{' '}
+            {activeInstrument === 'silent'
+              ? 'none'
+              : `${(activeVolume * 100).toFixed(0)}%`}
+          </p>
         </div>
       ) : (
         <div className="prediction">
           <p>Gesture: no hand detected</p>
           <p>Instrument: silent</p>
           <p>Note: none</p>
+          <p>Volume: none</p>
         </div>
       )}
       <button
