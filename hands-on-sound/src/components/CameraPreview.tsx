@@ -197,6 +197,8 @@ function CameraPreview({ settings }: CameraPreviewProps) {
         <video ref={videoRef} autoPlay muted playsInline />
         <HandCanvas 
           results={results} 
+          settings={settings}
+          isCameraOn={isCameraOn}
           canvasWidth={CAMERA_SIZE.width}
           canvasHeight={CAMERA_SIZE.height}
         />

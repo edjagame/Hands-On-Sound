@@ -129,6 +129,20 @@ export function getPlayableNotes(
   return notes
 }
 
+export function getDisplayNotes(
+  key: ScaleKey,
+  mode: ScaleMode,
+  requestedNoteCount: number,
+): string[] {
+  const noteCount = clampNoteCount(requestedNoteCount)
+  const scaleNotes = getScaleNotes(key, mode)
+
+  return Array.from(
+    { length: noteCount },
+    (_, index) => scaleNotes[index % scaleNotes.length],
+  )
+}
+
 export function getAvailableNoteCount(): number {
   return MAX_PLAYABLE_NOTES
 }
