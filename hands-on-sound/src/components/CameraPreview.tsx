@@ -1,41 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import HandTracker from './HandTracker'
 import HandCanvas from './HandCanvas'
 import GestureClassifier from './GestureClassifier'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 import type { HandGesturePredictions, HandId } from '../gesture'
-import { getDetectedHands } from '../hands'
 import { SampleAudioEngine } from '../audio/sampleAudioEngine'
-import { getNoteForHandPosition } from '../audio/notes'
-import { getVolumeForHandPosition } from '../audio/volume'
-import {
-  getInstrumentForGesture,
-  type Instrument,
-} from '../audio/types'
 import type { AppSettings } from '../settings'
+import {
+  getHandPerformanceStates,
+  HAND_IDS,
+} from '../handPerformance'
 
 const CAMERA_SIZE = {
   width:640,
   height:360
 }
 
-const MIN_AUDIO_CONFIDENCE = 0.6
-const HAND_IDS = ['left', 'right'] as const
-
 function stopMediaStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((track) => track.stop())
-}
-
-function getLandmarkForHand(
-  results: HandLandmarkerResult | null,
-  handId: HandId,
-  landmarkIndex: number,
-) {
-  const detectedHand = getDetectedHands(results).find(
-    (hand) => hand.handId === handId,
-  )
-
-  return detectedHand?.landmarks[landmarkIndex]
 }
 
 interface CameraPreviewProps {
@@ -52,38 +34,15 @@ function CameraPreview({ settings }: CameraPreviewProps) {
   const [results, setResults] = useState<HandLandmarkerResult | null>(null)
   const [predictions, setPredictions] = useState<HandGesturePredictions>({})
 
-  const getHandState = useCallback((handId: HandId) => {
-    const prediction = predictions[handId]
-    const handCenter = getLandmarkForHand(results, handId, 9)
-    const instrument: Instrument =
-      isCameraOn &&
-      prediction &&
-      prediction.confidence >= MIN_AUDIO_CONFIDENCE
-        ? getInstrumentForGesture(prediction.gesture)
-        : 'silent'
-    const noteX = handCenter ? 1 - handCenter.x : undefined
-    const note = getNoteForHandPosition(
-      noteX,
-      settings.numNotes,
-      settings.key,
-      settings.mode,
-    )
-    const volume = getVolumeForHandPosition(handCenter?.y)
-
-    return {
-      prediction,
-      instrument,
-      note,
-      volume,
-    }
-  }, [
-    isCameraOn,
-    predictions,
-    results,
-    settings.key,
-    settings.mode,
-    settings.numNotes,
-  ])
+  const handStates = useMemo(
+    () => getHandPerformanceStates({
+      results,
+      predictions,
+      settings,
+      isCameraOn,
+    }),
+    [isCameraOn, predictions, results, settings],
+  )
 
   async function startCamera() {
     setErrorMessage(null)
@@ -153,7 +112,7 @@ function CameraPreview({ settings }: CameraPreviewProps) {
 
   useEffect(() => {
     for (const handId of HAND_IDS) {
-      const { instrument, note, volume } = getHandState(handId)
+      const { instrument, note, volume } = handStates[handId]
 
       if (instrument === 'silent') {
         audioEngine.stop(handId)
@@ -162,10 +121,10 @@ function CameraPreview({ settings }: CameraPreviewProps) {
 
       audioEngine.play(handId, instrument, note, volume)
     }
-  }, [audioEngine, getHandState])
+  }, [audioEngine, handStates])
 
   function renderHandStatus(handId: HandId) {
-    const { prediction, instrument, note, volume } = getHandState(handId)
+    const { prediction, instrument, note, volume } = handStates[handId]
     const label = handId === 'left' ? 'Left Hand' : 'Right Hand'
 
     if (!prediction) {
@@ -214,6 +173,7 @@ function CameraPreview({ settings }: CameraPreviewProps) {
           results={results} 
           settings={settings}
           isCameraOn={isCameraOn}
+          handStates={handStates}
           canvasWidth={CAMERA_SIZE.width}
           canvasHeight={CAMERA_SIZE.height}
         />

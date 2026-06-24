@@ -2,39 +2,29 @@ import { useEffect, useRef } from 'react'
 import { DrawingUtils, HandLandmarker } from '@mediapipe/tasks-vision'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 import { getDisplayNotes } from '../audio/notes'
-import { getDetectedHands } from '../hands'
+import { HAND_IDS, type HandPerformanceStates } from '../handPerformance'
 import type { AppSettings } from '../settings'
 
 interface HandCanvasProps {
   results: HandLandmarkerResult | null
   settings: AppSettings
   isCameraOn: boolean
+  handStates: HandPerformanceStates
   canvasWidth: number
   canvasHeight: number
 }
 
-const HAND_CENTER_LANDMARK_INDEX = 9
-
-function clampLaneIndex(laneIndex: number, laneCount: number): number {
-  return Math.min(Math.max(laneIndex, 0), laneCount - 1)
-}
-
 function getActiveLaneIndices(
-  results: HandLandmarkerResult | null,
-  laneCount: number,
+  handStates: HandPerformanceStates,
 ): Set<number> {
   const activeLaneIndices = new Set<number>()
 
-  for (const hand of getDetectedHands(results)) {
-    const handCenter = hand.landmarks[HAND_CENTER_LANDMARK_INDEX]
+  for (const handId of HAND_IDS) {
+    const { laneIndex } = handStates[handId]
 
-    if (!handCenter || !Number.isFinite(handCenter.x)) {
-      continue
+    if (laneIndex !== undefined) {
+      activeLaneIndices.add(laneIndex)
     }
-
-    activeLaneIndices.add(
-      clampLaneIndex(Math.floor((1 - handCenter.x) * laneCount), laneCount),
-    )
   }
 
   return activeLaneIndices
@@ -45,7 +35,7 @@ function drawNoteLanes(
   width: number,
   height: number,
   settings: AppSettings,
-  results: HandLandmarkerResult | null,
+  handStates: HandPerformanceStates,
 ) {
   const notes = getDisplayNotes(
     settings.key,
@@ -53,7 +43,7 @@ function drawNoteLanes(
     settings.numNotes,
   )
   const laneWidth = width / notes.length
-  const activeLaneIndices = getActiveLaneIndices(results, notes.length)
+  const activeLaneIndices = getActiveLaneIndices(handStates)
 
   canvasCtx.save()
   canvasCtx.textAlign = 'center'
@@ -97,7 +87,7 @@ function drawNoteLanes(
 
 function drawHandCenterLandmarks(
   canvasCtx: CanvasRenderingContext2D,
-  results: HandLandmarkerResult | null,
+  handStates: HandPerformanceStates,
   width: number,
   height: number,
 ) {
@@ -106,8 +96,8 @@ function drawHandCenterLandmarks(
   canvasCtx.strokeStyle = '#0B5F24'
   canvasCtx.lineWidth = 2
 
-  for (const hand of getDetectedHands(results)) {
-    const handCenter = hand.landmarks[HAND_CENTER_LANDMARK_INDEX]
+  for (const handId of HAND_IDS) {
+    const { handCenter } = handStates[handId]
 
     if (!handCenter) {
       continue
@@ -126,6 +116,7 @@ function HandCanvas({
   results,
   settings,
   isCameraOn,
+  handStates,
   canvasHeight,
   canvasWidth,
 }: HandCanvasProps) {
@@ -143,7 +134,7 @@ function HandCanvas({
     canvasCtx.clearRect(0, 0, canvas.width, canvas.height)
 
     if (isCameraOn) {
-      drawNoteLanes(canvasCtx, canvas.width, canvas.height, settings, results)
+      drawNoteLanes(canvasCtx, canvas.width, canvas.height, settings, handStates)
     }
 
     if (!results) return
@@ -163,8 +154,8 @@ function HandCanvas({
       })
     }
 
-    drawHandCenterLandmarks(canvasCtx, results, canvas.width, canvas.height)
-  }, [results, settings, isCameraOn, canvasWidth, canvasHeight])
+    drawHandCenterLandmarks(canvasCtx, handStates, canvas.width, canvas.height)
+  }, [results, settings, isCameraOn, handStates, canvasWidth, canvasHeight])
 
   return (
     <canvas
