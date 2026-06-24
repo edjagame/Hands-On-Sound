@@ -197,6 +197,17 @@ function CameraPreview({ settings }: CameraPreviewProps) {
 
   return (
     <div className="camera">
+      <button
+        type="button"
+        onClick={toggleCamera}
+        disabled={isCameraStarting}
+      >
+        {isCameraStarting
+          ? 'Starting Camera...'
+          : isCameraOn
+            ? 'Stop Camera'
+            : 'Start Camera'}
+      </button>
       <div className="camera-display">
         <video ref={videoRef} autoPlay muted playsInline />
         <HandCanvas 
@@ -219,17 +230,6 @@ function CameraPreview({ settings }: CameraPreviewProps) {
       <div className="prediction">
         {HAND_IDS.map(renderHandStatus)}
       </div>
-      <button
-        type="button"
-        onClick={toggleCamera}
-        disabled={isCameraStarting}
-      >
-        {isCameraStarting
-          ? 'Starting Camera...'
-          : isCameraOn
-            ? 'Stop Camera'
-            : 'Start Camera'}
-      </button>
 
       {errorMessage && <p role="alert">{errorMessage}</p>}
     </div>

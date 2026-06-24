@@ -13,14 +13,54 @@
 
 .app-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(28rem, min(50vw, 800px)) minmax(12rem, 18rem);
+  grid-template-columns: minmax(14rem, 18rem) minmax(28rem, min(50vw, 800px)) minmax(12rem, 18rem);
   gap: 1.5rem;
   align-items: start;
+}
+
+.app-column-left {
+  min-width: 0;
 }
 
 .app-column-center {
   display: flex;
   justify-content: center;
+}
+
+.app-intro {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #edc988;
+  border-radius: 0.75rem;
+  background: rgba(255, 246, 217, 0.8);
+  box-shadow: 0 1rem 2rem rgba(181, 112, 34, 0.12);
+}
+
+.app-intro h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+}
+
+.app-intro p {
+  margin: 0.75rem 0 0;
+  line-height: 1.45;
+}
+
+.app-guide {
+  margin-top: 1.25rem;
+}
+
+.app-guide h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1.1rem;
+}
+
+.app-guide ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding-left: 1.2rem;
 }
 
 .settings {
@@ -143,13 +183,49 @@
   text-align: center;
 }
 
+.prediction {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.prediction-hand {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #edc988;
+  border-radius: 0.75rem;
+  background: rgba(255, 246, 217, 0.72);
+  box-shadow: 0 0.75rem 1.5rem rgba(181, 112, 34, 0.1);
+}
+
+.prediction-hand p {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.prediction-hand p + p {
+  margin-top: 0.35rem;
+}
+
 @media (max-width: 1100px) {
   .app-main {
     grid-template-columns: 1fr;
   }
 
-  .app-column-left {
-    display: none;
+  .app-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(12rem, 0.8fr);
+    gap: 1rem;
+  }
+
+  .app-intro h1,
+  .app-intro > p {
+    grid-column: 1;
+  }
+
+  .app-guide {
+    margin-top: 0;
   }
 }
 
@@ -160,5 +236,15 @@
 
   .camera {
     width: 100%;
+  }
+
+  .app-intro,
+  .prediction {
+    grid-template-columns: 1fr;
+  }
+
+  .app-intro h1,
+  .app-intro > p {
+    grid-column: auto;
   }
 }
