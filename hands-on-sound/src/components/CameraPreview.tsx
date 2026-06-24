@@ -4,7 +4,8 @@ import HandCanvas from './HandCanvas'
 import GestureClassifier from './GestureClassifier'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 import type { GesturePrediction } from '../gesture'
-import { SampleAudioEngine, getDefaultNote } from '../audio/sampleAudioEngine'
+import { SampleAudioEngine } from '../audio/sampleAudioEngine'
+import { getNoteForHandPosition } from '../audio/notes'
 import {
   getInstrumentForGesture,
   type Instrument,
@@ -17,14 +18,6 @@ const CAMERA_SIZE = {
 }
 
 const MIN_AUDIO_CONFIDENCE = 0.6
-
-function getNoteForSettings(settings: AppSettings): string {
-  if (settings.numNotes < 1) {
-    return getDefaultNote()
-  }
-
-  return getDefaultNote()
-}
 
 function stopMediaStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((track) => track.stop())
@@ -47,7 +40,11 @@ function CameraPreview({ settings }: CameraPreviewProps) {
     isCameraOn && prediction && prediction.confidence >= MIN_AUDIO_CONFIDENCE
       ? getInstrumentForGesture(prediction.gesture)
       : 'silent'
-  const activeNote = getNoteForSettings(settings)
+  const activeHandCenterX = results?.landmarks[0]?.[9]?.x
+  const activeNote = getNoteForHandPosition(
+    activeHandCenterX,
+    settings.numNotes,
+  )
 
   async function startCamera() {
     setErrorMessage(null)
@@ -144,11 +141,13 @@ function CameraPreview({ settings }: CameraPreviewProps) {
           <p>Gesture: {prediction.gesture}</p>
           <p>Confidence: {(prediction.confidence * 100).toFixed(1)}%</p>
           <p>Instrument: {activeInstrument}</p>
+          <p>Note: {activeInstrument === 'silent' ? 'none' : activeNote}</p>
         </div>
       ) : (
         <div className="prediction">
           <p>Gesture: no hand detected</p>
           <p>Instrument: silent</p>
+          <p>Note: none</p>
         </div>
       )}
       <button

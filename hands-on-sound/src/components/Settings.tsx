@@ -1,4 +1,5 @@
 import type { AppSettings } from '../settings'
+import { getAvailableNoteCount } from '../audio/notes'
 
 interface SettingsProps {
   settings: AppSettings
@@ -27,6 +28,7 @@ function Settings({ settings, onSettingsChange }: SettingsProps) {
         <input
           type="number"
           min="1"
+          max={getAvailableNoteCount()}
           value={settings.numNotes}
           onChange={(event) => handleNumNotesChange(event.target.value)}
         />

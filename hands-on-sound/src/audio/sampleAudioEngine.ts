@@ -1,15 +1,9 @@
 import type { AudioEngine, Instrument } from './types'
 
-const DEFAULT_NOTE = 'C4'
-
 function getSampleUrl(instrument: Exclude<Instrument, 'silent'>, note: string) {
   const fileName = `${encodeURIComponent(note)}.wav`
 
   return `${import.meta.env.BASE_URL}sounds/${instrument}/${fileName}`
-}
-
-export function getDefaultNote(): string {
-  return DEFAULT_NOTE
 }
 
 export class SampleAudioEngine implements AudioEngine {
