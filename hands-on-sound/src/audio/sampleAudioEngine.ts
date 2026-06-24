@@ -2,8 +2,18 @@ import type { AudioEngine, AudioVoiceId, Instrument } from './types'
 
 interface VoiceState {
   audio: HTMLAudioElement
+  instrument: Exclude<Instrument, 'silent'>
   key: string
 }
+
+interface ReleaseState {
+  audio: HTMLAudioElement
+  animationFrameId: number
+}
+
+const DEFAULT_RELEASE_MS = 150
+const MIN_RELEASE_MS = 0
+const MAX_RELEASE_MS = 500
 
 const MELODIC_SAMPLE_NOTES = new Set([
   'A#4',
@@ -83,6 +93,19 @@ function getFallbackSampleNote(
 
 export class SampleAudioEngine implements AudioEngine {
   private voices = new Map<AudioVoiceId, VoiceState>()
+  private releases = new Set<ReleaseState>()
+  private releaseMs = DEFAULT_RELEASE_MS
+
+  setReleaseMs(releaseMs: number): void {
+    if (!Number.isFinite(releaseMs)) {
+      return
+    }
+
+    this.releaseMs = Math.min(
+      Math.max(releaseMs, MIN_RELEASE_MS),
+      MAX_RELEASE_MS,
+    )
+  }
 
   play(
     voiceId: AudioVoiceId,
@@ -114,11 +137,14 @@ export class SampleAudioEngine implements AudioEngine {
     audio.loop = instrument !== 'snare'
     audio.volume = nextVolume
 
-    this.voices.set(voiceId, { audio, key })
+    this.voices.set(voiceId, { audio, instrument, key })
 
     void audio.play().catch((error: unknown) => {
       console.error('Audio playback failed:', error)
-      this.stop(voiceId)
+
+      if (this.voices.get(voiceId)?.audio === audio) {
+        this.stop(voiceId)
+      }
     })
   }
 
@@ -129,15 +155,61 @@ export class SampleAudioEngine implements AudioEngine {
       return
     }
 
-    voice.audio.pause()
-    voice.audio.currentTime = 0
     this.voices.delete(voiceId)
+
+    if (voice.instrument === 'snare' || this.releaseMs <= 0) {
+      this.stopVoiceImmediately(voice.audio)
+      return
+    }
+
+    this.releaseVoice(voice.audio)
+  }
+
+  private releaseVoice(audio: HTMLAudioElement): void {
+    const startTime = performance.now()
+    const startVolume = audio.volume
+    const releaseMs = this.releaseMs
+    const releaseState: ReleaseState = {
+      audio,
+      animationFrameId: 0,
+    }
+
+    const fadeOut = (timestamp: number) => {
+      const elapsedMs = Math.max(timestamp - startTime, 0)
+      const progress = Math.min(elapsedMs / releaseMs, 1)
+      audio.volume = startVolume * (1 - progress)
+
+      if (progress < 1) {
+        releaseState.animationFrameId = requestAnimationFrame(fadeOut)
+        return
+      }
+
+      this.releases.delete(releaseState)
+      this.stopVoiceImmediately(audio)
+    }
+
+    this.releases.add(releaseState)
+    releaseState.animationFrameId = requestAnimationFrame(fadeOut)
+  }
+
+  private stopVoiceImmediately(audio: HTMLAudioElement): void {
+    audio.pause()
+    audio.currentTime = 0
   }
 
   stopAll(): void {
-    for (const voiceId of this.voices.keys()) {
-      this.stop(voiceId)
+    for (const voice of this.voices.values()) {
+      this.stopVoiceImmediately(voice.audio)
     }
+
+    this.voices.clear()
+
+    for (const release of this.releases) {
+      cancelAnimationFrame(release.animationFrameId)
+      this.stopVoiceImmediately(release.audio)
+    }
+
+    this.releases.clear()
   }
 
   dispose(): void {

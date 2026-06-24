@@ -1,4 +1,7 @@
 import {
+  MAX_NOTE_RELEASE_MS,
+  MIN_NOTE_RELEASE_MS,
+  NOTE_RELEASE_STEP_MS,
   SCALE_KEYS,
   SCALE_MODES,
   type AppSettings,
@@ -23,6 +26,22 @@ function Settings({ settings, onSettingsChange }: SettingsProps) {
     onSettingsChange({
       ...settings,
       numNotes: Math.max(1, nextNumNotes),
+    })
+  }
+
+  function handleNoteReleaseChange(value: string) {
+    const nextNoteReleaseMs = Number(value)
+
+    if (!Number.isFinite(nextNoteReleaseMs)) {
+      return
+    }
+
+    onSettingsChange({
+      ...settings,
+      noteReleaseMs: Math.min(
+        Math.max(nextNoteReleaseMs, MIN_NOTE_RELEASE_MS),
+        MAX_NOTE_RELEASE_MS,
+      ),
     })
   }
 
@@ -77,6 +96,17 @@ function Settings({ settings, onSettingsChange }: SettingsProps) {
           max={getAvailableNoteCount()}
           value={settings.numNotes}
           onChange={(event) => handleNumNotesChange(event.target.value)}
+        />
+      </label>
+      <label className="settings-field">
+        <span>Release: {settings.noteReleaseMs} ms</span>
+        <input
+          type="range"
+          min={MIN_NOTE_RELEASE_MS}
+          max={MAX_NOTE_RELEASE_MS}
+          step={NOTE_RELEASE_STEP_MS}
+          value={settings.noteReleaseMs}
+          onChange={(event) => handleNoteReleaseChange(event.target.value)}
         />
       </label>
     </aside>

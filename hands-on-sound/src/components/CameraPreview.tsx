@@ -140,6 +140,10 @@ function CameraPreview({ settings }: CameraPreviewProps) {
   }
 
   useEffect(() => {
+    audioEngine.setReleaseMs(settings.noteReleaseMs)
+  }, [audioEngine, settings.noteReleaseMs])
+
+  useEffect(() => {
     // Release the camera if the component is removed while the stream is active.
     return () => {
       stopMediaStream(streamRef.current)

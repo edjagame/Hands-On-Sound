@@ -12,6 +12,7 @@ export interface AudioEngine {
   ) => void
   stop: (voiceId: AudioVoiceId) => void
   stopAll: () => void
+  setReleaseMs: (releaseMs: number) => void
   dispose: () => void
 }
 
