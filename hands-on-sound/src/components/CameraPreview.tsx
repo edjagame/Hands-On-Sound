@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import HandTracker from './HandTracker'
 import HandCanvas from './HandCanvas'
 import GestureClassifier from './GestureClassifier'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
-import type { GesturePrediction } from '../gesture'
+import type { HandGesturePredictions, HandId } from '../gesture'
+import { getDetectedHands } from '../hands'
 import { SampleAudioEngine } from '../audio/sampleAudioEngine'
 import { getNoteForHandPosition } from '../audio/notes'
 import { getVolumeForHandPosition } from '../audio/volume'
@@ -19,9 +20,22 @@ const CAMERA_SIZE = {
 }
 
 const MIN_AUDIO_CONFIDENCE = 0.6
+const HAND_IDS = ['left', 'right'] as const
 
 function stopMediaStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((track) => track.stop())
+}
+
+function getLandmarkForHand(
+  results: HandLandmarkerResult | null,
+  handId: HandId,
+  landmarkIndex: number,
+) {
+  const detectedHand = getDetectedHands(results).find(
+    (hand) => hand.handId === handId,
+  )
+
+  return detectedHand?.landmarks[landmarkIndex]
 }
 
 interface CameraPreviewProps {
@@ -36,18 +50,28 @@ function CameraPreview({ settings }: CameraPreviewProps) {
   const [isCameraStarting, setIsCameraStarting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [results, setResults] = useState<HandLandmarkerResult | null>(null)
-  const [prediction, setPrediction] = useState<GesturePrediction | null>(null)
-  const activeInstrument: Instrument =
-    isCameraOn && prediction && prediction.confidence >= MIN_AUDIO_CONFIDENCE
-      ? getInstrumentForGesture(prediction.gesture)
-      : 'silent'
-  const activeHandCenterX = results?.landmarks[0]?.[9]?.x
-  const activeNote = getNoteForHandPosition(
-    activeHandCenterX,
-    settings.numNotes,
-  )
-  const activeHandCenterY = results?.landmarks[0]?.[9]?.y
-  const activeVolume = getVolumeForHandPosition(activeHandCenterY)
+  const [predictions, setPredictions] = useState<HandGesturePredictions>({})
+
+  const getHandState = useCallback((handId: HandId) => {
+    const prediction = predictions[handId]
+    const handCenter = getLandmarkForHand(results, handId, 9)
+    const instrument: Instrument =
+      isCameraOn &&
+      prediction &&
+      prediction.confidence >= MIN_AUDIO_CONFIDENCE
+        ? getInstrumentForGesture(prediction.gesture)
+        : 'silent'
+    const noteX = handCenter ? 1 - handCenter.x : undefined
+    const note = getNoteForHandPosition(noteX, settings.numNotes)
+    const volume = getVolumeForHandPosition(handCenter?.y)
+
+    return {
+      prediction,
+      instrument,
+      note,
+      volume,
+    }
+  }, [isCameraOn, predictions, results, settings.numNotes])
 
   async function startCamera() {
     setErrorMessage(null)
@@ -89,8 +113,8 @@ function CameraPreview({ settings }: CameraPreviewProps) {
     }
 
     setResults(null)
-    setPrediction(null)
-    audioEngine.stop()
+    setPredictions({})
+    audioEngine.stopAll()
     setIsCameraOn(false)
   }
 
@@ -112,13 +136,48 @@ function CameraPreview({ settings }: CameraPreviewProps) {
   }, [audioEngine])
 
   useEffect(() => {
-    if (activeInstrument === 'silent') {
-      audioEngine.stop()
-      return
+    for (const handId of HAND_IDS) {
+      const { instrument, note, volume } = getHandState(handId)
+
+      if (instrument === 'silent') {
+        audioEngine.stop(handId)
+        continue
+      }
+
+      audioEngine.play(handId, instrument, note, volume)
+    }
+  }, [audioEngine, getHandState])
+
+  function renderHandStatus(handId: HandId) {
+    const { prediction, instrument, note, volume } = getHandState(handId)
+    const label = handId === 'left' ? 'Left Hand' : 'Right Hand'
+
+    if (!prediction) {
+      return (
+        <div className="prediction-hand" key={handId}>
+          <p>{label}: no hand detected</p>
+          <p>Instrument: silent</p>
+          <p>Note: none</p>
+          <p>Volume: none</p>
+        </div>
+      )
     }
 
-    audioEngine.play(activeInstrument, activeNote, activeVolume)
-  }, [activeInstrument, activeNote, activeVolume, audioEngine])
+    return (
+      <div className="prediction-hand" key={handId}>
+        <p>{label}: {prediction.gesture}</p>
+        <p>Confidence: {(prediction.confidence * 100).toFixed(1)}%</p>
+        <p>Instrument: {instrument}</p>
+        <p>Note: {instrument === 'silent' ? 'none' : note}</p>
+        <p>
+          Volume:{' '}
+          {instrument === 'silent'
+            ? 'none'
+            : `${(volume * 100).toFixed(0)}%`}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="camera">
@@ -137,29 +196,11 @@ function CameraPreview({ settings }: CameraPreviewProps) {
       />
       <GestureClassifier 
         results={results}
-        onPredictionChange={setPrediction}
+        onPredictionChange={setPredictions}
       />
-      {prediction ? (
-        <div className="prediction">
-          <p>Gesture: {prediction.gesture}</p>
-          <p>Confidence: {(prediction.confidence * 100).toFixed(1)}%</p>
-          <p>Instrument: {activeInstrument}</p>
-          <p>Note: {activeInstrument === 'silent' ? 'none' : activeNote}</p>
-          <p>
-            Volume:{' '}
-            {activeInstrument === 'silent'
-              ? 'none'
-              : `${(activeVolume * 100).toFixed(0)}%`}
-          </p>
-        </div>
-      ) : (
-        <div className="prediction">
-          <p>Gesture: no hand detected</p>
-          <p>Instrument: silent</p>
-          <p>Note: none</p>
-          <p>Volume: none</p>
-        </div>
-      )}
+      <div className="prediction">
+        {HAND_IDS.map(renderHandStatus)}
+      </div>
       <button
         type="button"
         onClick={toggleCamera}

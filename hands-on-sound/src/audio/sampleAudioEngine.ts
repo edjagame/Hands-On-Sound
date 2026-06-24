@@ -1,4 +1,9 @@
-import type { AudioEngine, Instrument } from './types'
+import type { AudioEngine, AudioVoiceId, Instrument } from './types'
+
+interface VoiceState {
+  audio: HTMLAudioElement
+  key: string
+}
 
 function getSampleUrl(instrument: Exclude<Instrument, 'silent'>, note: string) {
   const fileName = `${encodeURIComponent(note)}.wav`
@@ -7,12 +12,16 @@ function getSampleUrl(instrument: Exclude<Instrument, 'silent'>, note: string) {
 }
 
 export class SampleAudioEngine implements AudioEngine {
-  private currentAudio: HTMLAudioElement | null = null
-  private currentKey: string | null = null
+  private voices = new Map<AudioVoiceId, VoiceState>()
 
-  play(instrument: Instrument, note: string, volume: number): void {
+  play(
+    voiceId: AudioVoiceId,
+    instrument: Instrument,
+    note: string,
+    volume: number,
+  ): void {
     if (instrument === 'silent') {
-      this.stop()
+      this.stop(voiceId)
       return
     }
 
@@ -21,38 +30,46 @@ export class SampleAudioEngine implements AudioEngine {
       ? Math.min(Math.max(volume, 0), 1)
       : 0.75
 
-    if (this.currentKey === key && this.currentAudio) {
-      this.currentAudio.volume = nextVolume
+    const currentVoice = this.voices.get(voiceId)
+
+    if (currentVoice?.key === key) {
+      currentVoice.audio.volume = nextVolume
       return
     }
 
-    this.stop()
+    this.stop(voiceId)
 
     const audio = new Audio(getSampleUrl(instrument, note))
     audio.loop = instrument !== 'snare'
     audio.volume = nextVolume
 
-    this.currentAudio = audio
-    this.currentKey = key
+    this.voices.set(voiceId, { audio, key })
 
     void audio.play().catch((error: unknown) => {
       console.error('Audio playback failed:', error)
-      this.stop()
+      this.stop(voiceId)
     })
   }
 
-  stop(): void {
-    if (!this.currentAudio) {
+  stop(voiceId: AudioVoiceId): void {
+    const voice = this.voices.get(voiceId)
+
+    if (!voice) {
       return
     }
 
-    this.currentAudio.pause()
-    this.currentAudio.currentTime = 0
-    this.currentAudio = null
-    this.currentKey = null
+    voice.audio.pause()
+    voice.audio.currentTime = 0
+    this.voices.delete(voiceId)
+  }
+
+  stopAll(): void {
+    for (const voiceId of this.voices.keys()) {
+      this.stop(voiceId)
+    }
   }
 
   dispose(): void {
-    this.stop()
+    this.stopAll()
   }
 }

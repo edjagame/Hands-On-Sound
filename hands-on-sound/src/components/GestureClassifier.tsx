@@ -1,11 +1,20 @@
 import { useEffect, useRef } from 'react'
-import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
+import type {
+  HandLandmarkerResult,
+  NormalizedLandmark,
+} from '@mediapipe/tasks-vision'
 import { classifyGesture } from '../classification/gestureClassifier'
-import type { Gesture, GesturePrediction } from '../gesture'
+import type {
+  Gesture,
+  GesturePrediction,
+  HandGesturePredictions,
+  HandId,
+} from '../gesture'
+import { getDetectedHands } from '../hands'
 
 interface GestureClassifierProps {
   results: HandLandmarkerResult | null
-  onPredictionChange: (prediction: GesturePrediction | null) => void
+  onPredictionChange: (predictions: HandGesturePredictions) => void
 }
 
 const HISTORY_SIZE = 5
@@ -30,18 +39,39 @@ function getMajorityPrediction(
   })
 }
 
+function normalizeLandmarksForHand(
+  landmarks: NormalizedLandmark[],
+  handId: HandId,
+): NormalizedLandmark[] {
+  if (handId !== 'left') {
+    return landmarks
+  }
+
+  return landmarks.map((landmark) => ({
+    ...landmark,
+    x: 1 - landmark.x,
+  }))
+}
+
 function GestureClassifier({
   results,
   onPredictionChange,
 }: GestureClassifierProps) {
-  const predictionHistoryRef = useRef<GesturePrediction[]>([])
+  const predictionHistoryRef = useRef<
+    Record<HandId, GesturePrediction[]>
+  >({
+    left: [],
+    right: [],
+  })
   const inferenceRunningRef = useRef<boolean>(false)
 
   useEffect(() => {
-    const landmarks = results?.landmarks[0]
-    if (!landmarks) {
-      predictionHistoryRef.current = []
-      onPredictionChange(null)
+    const detectedHands = getDetectedHands(results)
+
+    if (!detectedHands.length) {
+      predictionHistoryRef.current.left = []
+      predictionHistoryRef.current.right = []
+      onPredictionChange({})
       return
     }
 
@@ -50,18 +80,52 @@ function GestureClassifier({
     let cancelled = false
     inferenceRunningRef.current = true
 
-    void classifyGesture(landmarks)
-      .then((nextPrediction) => {
+    async function classifyDetectedHands() {
+      const nextPredictions: Array<{
+        handId: HandId
+        prediction: GesturePrediction
+      }> = []
+
+      for (const { handId, landmarks } of detectedHands) {
+        const normalizedLandmarks = normalizeLandmarksForHand(
+          landmarks,
+          handId,
+        )
+        const prediction = await classifyGesture(normalizedLandmarks)
+
+        nextPredictions.push({ handId, prediction })
+      }
+
+      return nextPredictions
+    }
+
+    void classifyDetectedHands()
+      .then((nextPredictions) => {
         if (!cancelled) {
-          const history = predictionHistoryRef.current
+          const visibleHands = new Set<HandId>()
+          const predictions: HandGesturePredictions = {}
 
-          history.push(nextPrediction)
+          for (const { handId, prediction } of nextPredictions) {
+            visibleHands.add(handId)
 
-          if (history.length > HISTORY_SIZE) {
-            history.shift()
+            const history = predictionHistoryRef.current[handId]
+
+            history.push(prediction)
+
+            if (history.length > HISTORY_SIZE) {
+              history.shift()
+            }
+
+            predictions[handId] = getMajorityPrediction(history)
           }
 
-          onPredictionChange(getMajorityPrediction(history))
+          for (const handId of ['left', 'right'] as const) {
+            if (!visibleHands.has(handId)) {
+              predictionHistoryRef.current[handId] = []
+            }
+          }
+
+          onPredictionChange(predictions)
         }
       })
       .catch((error: unknown) => {

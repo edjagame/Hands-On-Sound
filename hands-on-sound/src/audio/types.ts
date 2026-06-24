@@ -1,10 +1,17 @@
-import type { Gesture } from '../gesture'
+import type { Gesture, HandId } from '../gesture'
 
 export type Instrument = 'violin' | 'flute' | 'trumpet' | 'snare' | 'silent'
+export type AudioVoiceId = HandId
 
 export interface AudioEngine {
-  play: (instrument: Instrument, note: string, volume: number) => void
-  stop: () => void
+  play: (
+    voiceId: AudioVoiceId,
+    instrument: Instrument,
+    note: string,
+    volume: number,
+  ) => void
+  stop: (voiceId: AudioVoiceId) => void
+  stopAll: () => void
   dispose: () => void
 }
 

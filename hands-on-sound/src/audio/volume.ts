@@ -1,5 +1,4 @@
 const DEFAULT_VOLUME = 0.75
-const VOLUME_CURVE_EXPONENT = 2
 
 function clampVolume(volume: number): number {
   return Math.min(Math.max(volume, 0), 1)

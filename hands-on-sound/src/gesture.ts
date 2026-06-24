@@ -10,7 +10,11 @@ export const GESTURES = [
 
 export type Gesture = (typeof GESTURES)[number]
 
+export type HandId = 'left' | 'right'
+
 export interface GesturePrediction {
   gesture: Gesture
   confidence: number
 }
+
+export type HandGesturePredictions = Partial<Record<HandId, GesturePrediction>>
