@@ -1,16 +1,37 @@
 import json
 import numpy as np
+import re
 from pathlib import Path
 
-# Stable numeric IDs used by training and eventual browser-side inference.
-gesture_to_id = {
-    "fist": 0,
-    "ok": 1,
-    "palm": 2,
-    "peace": 3,
-    "rock": 4,
-    "stop": 5,
-    "no_gesture": 6,
+REPO_ROOT = Path(__file__).resolve().parents[2]
+GESTURE_CONTRACT_PATH = REPO_ROOT / "hands-on-sound" / "src" / "gesture.ts"
+
+
+def load_gesture_labels():
+    """Load the browser gesture order used by ONNX inference."""
+    source = GESTURE_CONTRACT_PATH.read_text(encoding="utf-8")
+    match = re.search(
+        r"export\s+const\s+GESTURES\s*=\s*\[(.*?)\]\s*as\s+const",
+        source,
+        flags=re.DOTALL,
+    )
+
+    if not match:
+        raise ValueError(f"Could not find GESTURES in {GESTURE_CONTRACT_PATH}")
+
+    labels = re.findall(r"['\"]([^'\"]+)['\"]", match.group(1))
+
+    if not labels:
+        raise ValueError(f"GESTURES is empty in {GESTURE_CONTRACT_PATH}")
+
+    if len(labels) != len(set(labels)):
+        raise ValueError(f"GESTURES contains duplicate labels: {labels}")
+
+    return labels
+
+
+GESTURE_TO_ID = {
+    gesture: index for index, gesture in enumerate(load_gesture_labels())
 }
 
 
@@ -25,7 +46,7 @@ def process_annotations(file_path="annotations/train/", output_labels="labels.np
         with open(file, "r") as f:
             data = json.load(f)
             for entry_id, entry in data.items():
-                label_id = gesture_to_id.get(entry["labels"][0])
+                label_id = GESTURE_TO_ID.get(entry["labels"][0])
                 if label_id is None:
                     print(f"  Skipping unknown label: {entry['labels'][0]}")
                     continue
