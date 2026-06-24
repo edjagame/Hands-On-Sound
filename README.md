@@ -1,16 +1,66 @@
 # Hands-On-Sound
 
-Hands-On-Sound is a Python app that uses hand gestures to play digital instrument sounds.
+Hands-On-Sound is a browser-based, gesture-controlled instrument. It uses the
+camera to track hands, classifies hand gestures in the browser, and plays
+sampled instruments based on the detected gesture and hand position.
 
-It combines:
-- a camera feed for hand tracking
-- MediaPipe and OpenCV for landmark detection
-- a trained Keras model for gesture classification
-- Pygame for audio playback
+The active MVP is in `hands-on-sound/`.
 
-Supported instruments include violin, flute, trumpet, and snare drum.
+## MVP Features
+
+- Browser camera capture with a start/stop control.
+- MediaPipe hand landmark tracking for up to two hands.
+- ONNX gesture classification in the browser.
+- Gesture-to-instrument mapping:
+  - `fist` plays violin.
+  - `ok` plays flute.
+  - `rock` plays trumpet.
+  - `peace` plays snare drum.
+  - `palm`, `stop`, and `no_gesture` silence the hand.
+- Two-hand playback, with each detected hand controlling its own voice.
+- Horizontal hand position selects notes from the active scale.
+- Vertical hand position controls volume.
+- Camera overlay with hand landmarks, note lanes, and the active note lane.
+- Settings for key, major/minor mode, number of playable notes, and note
+  release time.
+- Browser-served model and sound assets under `hands-on-sound/public/`.
+
+## Runtime Flow
+
+```text
+browser camera -> MediaPipe landmarks -> ONNX gesture classifier -> React UI -> sampled audio
+```
+
+1. The user starts the camera in the browser.
+2. MediaPipe Tasks Vision detects up to two hands and returns 21 landmarks per
+   hand.
+3. The gesture classifier runs against each detected hand using the 21 `(x, y)`
+   landmark pairs.
+4. The React UI displays the camera feed, hand overlay, gesture prediction, note,
+   instrument, confidence, and volume.
+5. The audio engine plays the mapped sampled instrument for each hand.
+
+## Repository Areas
+
+- `hands-on-sound/` - active React, TypeScript, and Vite browser application.
+- `hands-on-sound/public/models/` - browser-served MediaPipe and ONNX model
+  artifacts.
+- `hands-on-sound/public/sounds/` - sampled audio for violin, flute, trumpet,
+  and snare drum.
+- `ml/` - PyTorch gesture-classifier training and evaluation.
+- `legacy/` - read-only behavioral reference from the previous Python desktop
+  application.
 
 ## Setup
+
+Install browser app dependencies:
+
+```powershell
+cd hands-on-sound
+npm.cmd install
+```
+
+Optional Python setup for classifier work:
 
 ```powershell
 python -m venv .venv
@@ -18,49 +68,33 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Run the app from the repository root so relative asset paths resolve correctly.
-
-## Run
+## Run The Browser App
 
 ```powershell
-python Main.py
+cd hands-on-sound
+npm.cmd run dev
 ```
 
-Make sure your camera is connected and available before starting the app.
+Open the local Vite URL in a browser and allow camera access when prompted.
 
-## Project Files
+## Verification
 
-- `Main.py` - compatibility launcher for the app
-- `hands_on_sound/` - runtime app, settings UI, sound playback, and shared paths
-- `assets/` - instrument sounds and Keras model artifacts
-- `ml/` - model training and evaluation scripts
-- `data/` - landmark arrays, collected images, and dataset creation scripts
-- `tools/` - image collection and sound generation utilities
-
-## Runtime Flow
-
-1. `Main.py` imports and starts `hands_on_sound.app.main()`.
-2. The app shows a small settings window for key and mode selection.
-3. The model is loaded from `assets/models/`.
-4. Frames from the camera are processed with MediaPipe hand landmarks.
-5. The gesture model selects an instrument, and the hand position selects the note and volume.
-6. Pygame plays the matching sampled sound from `assets/sounds/`.
-
-## Development Scripts
-
-Run model and dataset scripts from the repository root:
+Browser application:
 
 ```powershell
-python ml\evaluate_model.py
-python ml\train_model.py
-python ml\check_arrays.py
-python data\create_landmark_dataset.py
-python tools\collect_images.py
+cd hands-on-sound
+npm.cmd run lint
+npm.cmd run build
 ```
 
-## Assets
+PyTorch classifier:
 
-- `assets/models/` stores the active `.keras` model and archived training artifacts.
-- `assets/sounds/` stores instrument samples grouped by instrument name.
-- `data/landmarks/` stores the generated `.npy` arrays used for training and evaluation.
-- `data/images/data/` stores collected gesture images used to build the landmark dataset.
+```powershell
+.\.venv\Scripts\python.exe ml\test.py
+```
+
+## Notes
+
+- Browser runtime code should stay independent of Python.
+- Runtime code should not depend on OpenCV, Pygame, TensorFlow, or Keras.
+- Static files needed by the browser should live in `hands-on-sound/public/`.

@@ -6,6 +6,8 @@ import {
 } from '@mediapipe/tasks-vision'
 import type { HandLandmarkerResult } from '@mediapipe/tasks-vision'
 
+const MEDIAPIPE_WASM_PATH = `${import.meta.env.BASE_URL}vendor/mediapipe/tasks-vision/wasm`
+
 interface HandTrackerProps {
   videoRef: RefObject<HTMLVideoElement | null>
   isCameraOn: boolean
@@ -21,7 +23,7 @@ function HandTracker({ videoRef, isCameraOn, onResults }: HandTrackerProps) {
 
     async function initializeMediaPipe() {
       const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm',
+        MEDIAPIPE_WASM_PATH,
       )
 
       instance = await HandLandmarker.createFromOptions(vision, {

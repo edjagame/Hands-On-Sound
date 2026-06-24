@@ -1,73 +1,62 @@
-# React + TypeScript + Vite
+# Hands-On-Sound Browser App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the active React, TypeScript, and Vite implementation of
+Hands-On-Sound.
 
-Currently, two official plugins are available:
+## MVP Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Start and stop the browser camera from the main screen.
+- Track up to two hands with MediaPipe Tasks Vision.
+- Classify gestures in the browser with `onnxruntime-web`.
+- Play sampled audio for each detected hand:
+  - `fist` -> violin
+  - `ok` -> flute
+  - `rock` -> trumpet
+  - `peace` -> snare drum
+  - `palm`, `stop`, `no_gesture` -> silence
+- Use horizontal hand position to choose notes.
+- Use vertical hand position to control volume.
+- Show live prediction status for left and right hands.
+- Draw hand landmarks, note lanes, and the active note lane over the camera.
+- Configure key, major/minor mode, note count, and release time.
 
-## React Compiler
+## Assets
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Browser-served assets live in `public/`:
 
-## Expanding the ESLint configuration
+- `public/models/hand_landmarker.task` - MediaPipe hand landmark model.
+- `public/models/hand_sign_model.onnx` - gesture classifier model.
+- `public/sounds/violin/` - violin samples.
+- `public/sounds/flute/` - flute samples.
+- `public/sounds/trumpet/` - trumpet samples.
+- `public/sounds/snare/snare.wav` - snare sample.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Development
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Install dependencies:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+npm.cmd install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Run the app:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+npm.cmd run dev
 ```
+
+Build and lint:
+
+```powershell
+npm.cmd run lint
+npm.cmd run build
+```
+
+## Implementation Notes
+
+- Camera capture is handled with browser media APIs.
+- Hand tracking uses `@mediapipe/tasks-vision`.
+- Gesture inference uses the ONNX classifier in `public/models/`.
+- Audio playback uses browser audio primitives and sampled `.wav` files.
+- Browser runtime code should not import Python modules or depend on OpenCV,
+  Pygame, TensorFlow, or Keras.
